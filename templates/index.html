@@ -228,6 +228,17 @@
                 rows="10"
                 placeholder="Bonjour,&#10;&#10;Nous avons le plaisir de vous contacter..."
                 class="w-full text-sm font-sans p-3.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition custom-scroll resize-y bg-slate-50/20"></textarea>
+
+              <!-- Signature inclusion toggle in composer -->
+              <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200 mt-2">
+                <label class="flex items-center space-x-2.5 cursor-pointer text-xs font-semibold text-slate-700 select-none">
+                  <input type="checkbox" id="chk-include-signature" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 transition" checked>
+                  <span>✒️ Inclure ma signature d'email à la fin</span>
+                </label>
+                <button type="button" onclick="switchTab('settings')" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-bold underline">
+                  Gérer ma signature
+                </button>
+              </div>
             </div>
 
             <!-- Live Preview View (Hidden by default) -->
@@ -469,6 +480,58 @@
             <p class="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200">
               ⚠️ <b>Remarque Render :</b> Le plan gratuit de Render bloque le port SMTP 587 de Gmail. Si votre app est hébergée sur Render, utilisez plutôt <b>Brevo API</b> ci-dessus.
             </p>
+          </div>
+
+          <!-- GROUP EMAIL SIGNATURE -->
+          <div class="pt-4 border-t border-slate-100 space-y-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <label class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+                  <span>✒️ Signature de l'expéditeur</span>
+                </label>
+                <p class="text-[11px] text-slate-500">S'ajoute automatiquement à la fin de tous vos emails.</p>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button type="button" onclick="insertSignatureTemplate()" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-bold underline">
+                  + Exemple EPIK
+                </button>
+                <button type="button" onclick="toggleSignatureMode()" id="btn-sig-mode" class="text-[11px] text-slate-600 hover:text-slate-900 font-semibold px-2 py-0.5 rounded bg-slate-100 border border-slate-200">
+                  Mode HTML
+                </button>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+              <input type="checkbox" id="cfg-include-signature" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300" checked>
+              <label for="cfg-include-signature" class="text-xs font-semibold text-slate-700 cursor-pointer select-none">
+                Activer et inclure automatiquement cette signature
+              </label>
+            </div>
+
+            <div class="space-y-2">
+              <!-- Visual ContentEditable Editor where they can paste formatted signature from Gmail -->
+              <div 
+                id="cfg-signature-editor" 
+                contenteditable="true" 
+                class="w-full min-h-[110px] max-h-[220px] p-3 rounded-xl border border-slate-200 bg-white overflow-y-auto text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition custom-scroll"
+                placeholder="Collez ici votre signature Gmail..."></div>
+              
+              <!-- Raw Text/HTML fallback textarea -->
+              <textarea 
+                id="cfg-signature" 
+                rows="5" 
+                class="hidden w-full text-xs font-mono p-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition bg-slate-50/50"
+                placeholder="Votre code HTML ou texte de signature..."></textarea>
+
+              <div class="p-3 bg-indigo-50/70 rounded-xl border border-indigo-100 text-[11px] text-indigo-900 space-y-1">
+                <p class="font-bold flex items-center space-x-1">
+                  <span>💡 Comment copier votre signature déjà présente dans Gmail :</span>
+                </p>
+                <p>1. Ouvrez <b>Gmail</b> ➡️ cliquez sur la roue dentée <b>Paramètres (⚙️)</b> en haut à droite ➡️ <b>Voir tous les paramètres</b>.</p>
+                <p>2. Dans l'onglet <b>Général</b>, descendez jusqu'à <b>Signature</b>.</p>
+                <p>3. Sélectionnez votre signature avec la souris, faites <b>Ctrl + C</b> (copier), puis cliquez dans la case blanche ci-dessus et faites <b>Ctrl + V</b> (coller) ! Vos textes, couleurs, logos et liens seront conservés.</p>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -795,6 +858,44 @@
       input.type = input.type === "password" ? "text" : "password";
     }
 
+    let isSigHtmlMode = false;
+
+    function toggleSignatureMode() {
+      const editor = document.getElementById("cfg-signature-editor");
+      const textarea = document.getElementById("cfg-signature");
+      const btn = document.getElementById("btn-sig-mode");
+
+      if (!isSigHtmlMode) {
+        textarea.value = editor.innerHTML;
+        editor.classList.add("hidden");
+        textarea.classList.remove("hidden");
+        btn.textContent = "Mode Visuel";
+        btn.classList.add("bg-indigo-100", "text-indigo-700");
+        isSigHtmlMode = true;
+      } else {
+        editor.innerHTML = textarea.value;
+        textarea.classList.add("hidden");
+        editor.classList.remove("hidden");
+        btn.textContent = "Mode HTML";
+        btn.classList.remove("bg-indigo-100", "text-indigo-700");
+        isSigHtmlMode = false;
+      }
+    }
+
+    function insertSignatureTemplate() {
+      const senderName = document.getElementById("cfg-sender-name").value.trim() || "Mohamed Ali Mseddi";
+      const senderEmail = document.getElementById("cfg-sender-email").value.trim() || "mrtmousdi@gmail.com";
+      const tpl = `<div style="font-family: Arial, sans-serif; font-size: 13px; color: #334155; line-height: 1.5;">
+  <p style="margin: 0; font-weight: bold; color: #1e293b; font-size: 14px;">${senderName}</p>
+  <p style="margin: 2px 0 6px 0; color: #64748b; font-size: 12px; font-weight: 500;">EPIK ISIMS</p>
+  <p style="margin: 0; color: #4f46e5; font-size: 12px;">📧 ${senderEmail}</p>
+</div>`;
+      const editor = document.getElementById("cfg-signature-editor");
+      const textarea = document.getElementById("cfg-signature");
+      if (editor) editor.innerHTML = tpl;
+      if (textarea) textarea.value = tpl;
+    }
+
     // Live validation feedback for Brevo API Key
     document.addEventListener("DOMContentLoaded", () => {
       const brevoInput = document.getElementById("cfg-brevo-key");
@@ -815,6 +916,18 @@
             helper.className = "p-2 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-medium";
             helper.innerHTML = `✅ <b>Longueur valide (${val.length} caractères) !</b> Vous pouvez tester ou enregistrer.`;
           }
+        });
+      }
+
+      // Sync signature checkboxes between Composer and Settings
+      const chkComposer = document.getElementById("chk-include-signature");
+      const chkSettings = document.getElementById("cfg-include-signature");
+      if (chkComposer && chkSettings) {
+        chkComposer.addEventListener("change", () => {
+          chkSettings.checked = chkComposer.checked;
+        });
+        chkSettings.addEventListener("change", () => {
+          chkComposer.checked = chkSettings.checked;
         });
       }
     });
@@ -843,6 +956,20 @@
           document.getElementById("delay-display").textContent = parseFloat(savedConfig.default_delay).toFixed(1) + " sec";
         }
 
+        if (savedConfig.email_signature) {
+          const editor = document.getElementById("cfg-signature-editor");
+          const textarea = document.getElementById("cfg-signature");
+          if (editor) editor.innerHTML = savedConfig.email_signature;
+          if (textarea) textarea.value = savedConfig.email_signature;
+        }
+        const incSig = savedConfig.include_signature !== false;
+        if (document.getElementById("cfg-include-signature")) {
+          document.getElementById("cfg-include-signature").checked = incSig;
+        }
+        if (document.getElementById("chk-include-signature")) {
+          document.getElementById("chk-include-signature").checked = incSig;
+        }
+
         const warn = document.getElementById("unconfigured-warning");
         const isBrevoConfigured = prov === "brevo" && savedConfig.sender_email && savedConfig.has_brevo_key;
         const isGmailConfigured = prov === "gmail" && savedConfig.sender_email && savedConfig.has_password;
@@ -865,12 +992,20 @@
       const pwd = document.getElementById("cfg-password").value.trim();
       const delay = parseFloat(document.getElementById("delay-slider").value);
 
+      const sigEditor = document.getElementById("cfg-signature-editor");
+      const sigTextarea = document.getElementById("cfg-signature");
+      let signature = isSigHtmlMode ? sigTextarea.value.trim() : (sigEditor ? sigEditor.innerHTML.trim() : "");
+      if (signature === "<br>" || signature === "<p></p>") signature = "";
+      const includeSig = document.getElementById("cfg-include-signature") ? document.getElementById("cfg-include-signature").checked : true;
+
       const payload = {
         provider: currentProvider,
         sender_name: senderName,
         sender_email: senderEmail,
         gmail_address: senderEmail,
-        default_delay: delay
+        default_delay: delay,
+        email_signature: signature,
+        include_signature: includeSig
       };
       if (brevoKey) payload.brevo_api_key = brevoKey;
       if (pwd) payload.app_password = pwd;
@@ -1126,7 +1261,21 @@
         }
         rawContent = rawContent.replace(/{email}/g, '<span class="bg-indigo-100 text-indigo-800 px-1 rounded font-mono text-xs">destinataire@exemple.com</span>');
         rawContent = rawContent.replace(/{date}/g, new Date().toLocaleDateString('fr-FR'));
-        document.getElementById("preview-box").innerHTML = rawContent || "<p class='text-slate-400 italic'>Corps de l'email vide...</p>";
+
+        const includeSig = document.getElementById("chk-include-signature") ? document.getElementById("chk-include-signature").checked : true;
+        const sigEditor = document.getElementById("cfg-signature-editor");
+        let sigContent = sigEditor ? sigEditor.innerHTML.trim() : (savedConfig.email_signature || "");
+        if (sigContent === "<br>" || sigContent === "<p></p>") sigContent = "";
+
+        let previewHtml = rawContent || "<p class='text-slate-400 italic'>Corps de l'email vide...</p>";
+        if (includeSig && sigContent) {
+          previewHtml += `
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 14px; margin-top: 24px; color: #475569; font-size: 13px;">
+              ${sigContent}
+            </div>
+          `;
+        }
+        document.getElementById("preview-box").innerHTML = previewHtml;
       }
     }
 
@@ -1227,6 +1376,11 @@
       btn.disabled = true;
       btn.textContent = "Envoi du test...";
 
+      const includeSig = document.getElementById("chk-include-signature") ? document.getElementById("chk-include-signature").checked : true;
+      const sigEditor = document.getElementById("cfg-signature-editor");
+      let signature = sigEditor ? sigEditor.innerHTML.trim() : (savedConfig.email_signature || "");
+      if (signature === "<br>" || signature === "<p></p>") signature = "";
+
       try {
         const res = await fetch("/api/test-send", {
           method: "POST",
@@ -1235,7 +1389,9 @@
             provider: currentProvider,
             test_email: target,
             subject: subject,
-            content: content
+            content: content,
+            include_signature: includeSig,
+            email_signature: signature
           })
         });
         const data = await res.json();
@@ -1297,17 +1453,24 @@
         return;
       }
 
-      startCampaign(emails, subject, content, delay);
+      const includeSig = document.getElementById("chk-include-signature") ? document.getElementById("chk-include-signature").checked : true;
+      const sigEditor = document.getElementById("cfg-signature-editor");
+      let signature = sigEditor ? sigEditor.innerHTML.trim() : (savedConfig.email_signature || "");
+      if (signature === "<br>" || signature === "<p></p>") signature = "";
+
+      startCampaign(emails, subject, content, delay, includeSig, signature);
     }
 
-    async function startCampaign(recipients, subject, content, delay) {
+    async function startCampaign(recipients, subject, content, delay, includeSig, signature) {
       const payload = {
         provider: currentProvider,
         recipients: recipients,
         subject: subject,
         content: content,
         delay: delay,
-        attachments: attachmentsList
+        attachments: attachmentsList,
+        include_signature: includeSig !== undefined ? includeSig : true,
+        email_signature: signature || ""
       };
 
       try {

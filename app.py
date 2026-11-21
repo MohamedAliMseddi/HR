@@ -57,7 +57,9 @@ def load_config():
         "app_password": "",
         "brevo_api_key": "",
         "sender_name": "",
-        "default_delay": 2
+        "default_delay": 2,
+        "email_signature": "",
+        "include_signature": True
     }
 
 def save_config(data):
@@ -410,7 +412,9 @@ class MailServerHandler(BaseHTTPRequestHandler):
                 "has_password": bool(cfg.get("app_password")),
                 "has_brevo_key": bool(cfg.get("brevo_api_key")),
                 "sender_name": cfg.get("sender_name", ""),
-                "default_delay": cfg.get("default_delay", 2)
+                "default_delay": cfg.get("default_delay", 2),
+                "email_signature": cfg.get("email_signature", ""),
+                "include_signature": cfg.get("include_signature", True)
             }
             self.send_json(safe_cfg)
             return
@@ -489,6 +493,12 @@ class MailServerHandler(BaseHTTPRequestHandler):
             target = data.get("test_email", "")
             subject = data.get("subject", "Test MailStorm")
             content = data.get("content", "<p>Ceci est un email de test envoyé par <b>MailStorm</b>.</p>")
+            
+            include_sig = data.get("include_signature", cfg.get("include_signature", True))
+            sig = data.get("email_signature") if "email_signature" in data else cfg.get("email_signature", "")
+            if include_sig and sig:
+                sig_html = sig if ("<" in sig and ">" in sig) else sig.replace("\n", "<br>")
+                content = f"{content}<br><br><div style='border-top:1px solid #e2e8f0;padding-top:12px;margin-top:20px;color:#475569;'>{sig_html}</div>"
 
             if not target or "@" not in target:
                 self.send_json({"success": False, "message": "Adresse email de test invalide."})
@@ -549,6 +559,12 @@ class MailServerHandler(BaseHTTPRequestHandler):
             content = data.get("content", "")
             delay = float(data.get("delay", 2))
             attachments = data.get("attachments", [])
+
+            include_sig = data.get("include_signature", cfg.get("include_signature", True))
+            sig = data.get("email_signature") if "email_signature" in data else cfg.get("email_signature", "")
+            if include_sig and sig:
+                sig_html = sig if ("<" in sig and ">" in sig) else sig.replace("\n", "<br>")
+                content = f"{content}<br><br><div style='border-top:1px solid #e2e8f0;padding-top:12px;margin-top:20px;color:#475569;'>{sig_html}</div>"
 
             if provider == "brevo" and (not brevo_key or not sender_email):
                 self.send_json({"success": False, "message": "Veuillez configurer votre clé API Brevo et votre adresse email d'expéditeur."})
