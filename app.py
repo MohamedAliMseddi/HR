@@ -7,6 +7,7 @@ import os
 import sys
 import json
 import time
+import datetime
 import ssl
 import smtplib
 import re
@@ -27,6 +28,8 @@ from urllib.parse import urlparse, parse_qs
 PORT = int(os.environ.get("PORT", 5000))
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), "config.json")
 LOGS_FILE = os.path.join(os.path.dirname(__file__), "history.json")
+LISTS_FILE = os.path.join(os.path.dirname(__file__), "contact_lists.json")
+SCHEDULED_FILE = os.path.join(os.path.dirname(__file__), "scheduled_tasks.json")
 
 # État global de l'envoi en cours
 campaign_state = {
@@ -86,6 +89,207 @@ def save_campaign_to_history(entry):
             json.dump(history, f, indent=2, ensure_ascii=False)
     except Exception as e:
         print(f"Erreur sauvegarde historique: {e}")
+
+def load_contact_lists():
+    if os.path.exists(LISTS_FILE):
+        try:
+            with open(LISTS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+def save_contact_lists(lists):
+    try:
+        with open(LISTS_FILE, "w", encoding="utf-8") as f:
+            json.dump(lists, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"Erreur sauvegarde listes: {e}")
+
+def load_scheduled_tasks():
+    if os.path.exists(SCHEDULED_FILE):
+        try:
+            with open(SCHEDULED_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+def save_scheduled_tasks(tasks):
+    try:
+        with open(SCHEDULED_FILE, "w", encoding="utf-8") as f:
+            json.dump(tasks, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"Erreur sauvegarde tâches programmées: {e}")
+
+def evaluate_spam_score(subject, content_html):
+    subject = (subject or "").strip()
+    content_html = (content_html or "").strip()
+    clean_body = re.sub(r'<[^>]+>', ' ', content_html)
+    clean_body_normalized = ' '.join(clean_body.split())
+    
+    score = 100
+    penalties = []
+    bonuses = []
+    recommendations = []
+
+    # 1. Subject checks
+    if not subject:
+        score -= 35
+        penalties.append({"rule": "Sujet manquant", "penalty": 35, "desc": "L'objet de l'email est vide. Les filtres anti-spam rejettent systématiquement les emails sans objet."})
+        recommendations.append("Ajoutez un objet précis et accrocheur décrivant clairement votre message.")
+    else:
+        subj_len = len(subject)
+        if subj_len < 6:
+            score -= 15
+            penalties.append({"rule": "Sujet trop court", "penalty": 15, "desc": f"L'objet ne fait que {subj_len} caractères. Un objet trop court est suspect."})
+            recommendations.append("Développez votre objet pour qu'il contienne au moins 15 à 20 caractères.")
+        elif subj_len > 80:
+            score -= 8
+            penalties.append({"rule": "Sujet trop long", "penalty": 8, "desc": f"L'objet fait {subj_len} caractères. Il risque d'être tronqué sur smartphone."})
+            recommendations.append("Raccourcissez l'objet sous 65 caractères pour un confort de lecture optimal.")
+        else:
+            bonuses.append({"rule": "Longueur d'objet idéale", "bonus": 5, "desc": f"Longueur parfaite ({subj_len} car.) pour smartphone et boîte de réception."})
+
+        # All-caps check
+        letters = [c for c in subject if c.isalpha()]
+        if len(letters) >= 6:
+            upper_count = sum(1 for c in letters if c.isupper())
+            upper_ratio = upper_count / len(letters)
+            if upper_ratio > 0.35:
+                score -= 20
+                penalties.append({"rule": "Trop de MAJUSCULES dans l'objet", "penalty": 20, "desc": f"{int(upper_ratio*100)}% de lettres en majuscules. Un signal de spam majeur pour Gmail."})
+                recommendations.append("Écrivez votre objet en minuscules standard (gardez une seule majuscule au début).")
+
+        # Punctuation check
+        if re.search(r'[!?]{2,}', subject):
+            score -= 15
+            penalties.append({"rule": "Ponctuation excessive dans l'objet", "penalty": 15, "desc": "Présence de points consécutifs répétés (ex: !!, ??)."})
+            recommendations.append("Supprimez les points d'exclamation ou d'interrogation multiples dans l'objet.")
+
+        if any(sym in subject for sym in ["$$", "€€", "££", "💰"]):
+            score -= 12
+            penalties.append({"rule": "Symboles monétaires agressifs", "penalty": 12, "desc": "Présence de symboles de monnaie répétés ($$, €€) dans l'objet."})
+            recommendations.append("Évitez les symboles d'argent dans l'objet de vos emails professionnels.")
+
+    # 2. Body checks
+    if not clean_body_normalized or len(clean_body_normalized) < 25:
+        score -= 30
+        penalties.append({"rule": "Corps du message quasi vide", "penalty": 30, "desc": "Le message contient moins de 25 caractères de texte."})
+        recommendations.append("Ajoutez du contenu textuel informatif structuré en paragraphes.")
+    else:
+        if re.search(r'!{3,}', clean_body_normalized):
+            score -= 10
+            penalties.append({"rule": "Ponctuation agressive dans le corps", "penalty": 10, "desc": "Points d'exclamation répétés (!!!) dans le corps du texte."})
+            recommendations.append("Utilisez une ponctuation simple et soignée dans le corps de votre email.")
+
+    # 3. Spam trigger keywords
+    SPAM_TRIGGER_LIST = [
+        ("100% gratuit", "100% gratuit"),
+        ("100% garanti", "100% garanti"),
+        ("gratuit", "gratuit"),
+        ("argent facile", "argent facile"),
+        ("gagner de l'argent", "gagner de l'argent"),
+        ("devenir riche", "devenir riche"),
+        ("gagner", "gagner"),
+        ("bénéfice immédiat", "bénéfice immédiat"),
+        ("satisfait ou remboursé", "satisfait ou remboursé"),
+        ("remboursement", "remboursement"),
+        ("cliquez ici", "cliquez ici"),
+        ("cliquez vite", "cliquez vite"),
+        ("offre exceptionnelle", "offre exceptionnelle"),
+        ("offre limitée", "offre limitée"),
+        ("sans engagement", "sans engagement"),
+        ("urgent", "urgent"),
+        ("action immédiate", "action immédiate"),
+        ("félicitations vous avez", "félicitations vous avez"),
+        ("gains", "gains"),
+        ("loterie", "loterie"),
+        ("casino", "casino"),
+        ("crypto gratuite", "crypto gratuite"),
+        ("prêt rapide", "prêt rapide"),
+        ("crédit sans justificatif", "crédit sans justificatif"),
+        ("viagra", "viagra"),
+        ("click here", "click here"),
+        ("buy now", "buy now"),
+        ("free money", "free money"),
+        ("earn money", "earn money"),
+        ("winner", "winner"),
+        ("risk free", "risk free"),
+        ("cash bonus", "cash bonus")
+    ]
+
+    full_text_lower = f"{subject.lower()} {clean_body_normalized.lower()}"
+    detected_spam_words = []
+    for word, label in SPAM_TRIGGER_LIST:
+        if re.search(r'\b' + re.escape(word) + r'\b', full_text_lower, re.IGNORECASE):
+            if label not in detected_spam_words:
+                detected_spam_words.append(label)
+
+    if detected_spam_words:
+        spam_penalty = min(35, len(detected_spam_words) * 8)
+        score -= spam_penalty
+        penalties.append({
+            "rule": f"Mots déclencheurs de spam ({len(detected_spam_words)})",
+            "penalty": spam_penalty,
+            "desc": f"Termes identifiés : {', '.join(detected_spam_words[:4])}{'...' if len(detected_spam_words) > 4 else ''}."
+        })
+        recommendations.append(f"Remplacez les termes suspects ({', '.join(detected_spam_words[:3])}) par des formulations plus professionnelles.")
+
+    # 4. Bonuses
+    # Personalization tags detected
+    if re.search(r'\{(nom|prénom|prenom|email|club|poste|[a-zA-Z0-9_-]+)\}', f"{subject} {content_html}", re.IGNORECASE):
+        bonuses.append({
+            "rule": "Personnalisation dynamique activée",
+            "bonus": 8,
+            "desc": "L'email contient des variables ({Nom}, {Prénom}, etc.). Les serveurs de messagerie récompensent les emails personnalisés."
+        })
+
+    # Polite closing / signature detection
+    polite_words = ["cordialement", "bonne journée", "sincères salutations", "l'équipe", "au plaisir", "chaleureusement", "restant à votre", "bien à vous", "merci"]
+    if any(pw in clean_body_normalized.lower() for pw in polite_words) or ("<div" in content_html and "border-top" in content_html):
+        bonuses.append({
+            "rule": "Signature & politesse professionnelles",
+            "bonus": 6,
+            "desc": "Présence d'une formule de politesse ou d'une signature d'email soignée."
+        })
+
+    # Healthy HTML structure
+    if "<p" in content_html or "<div" in content_html or "<h" in content_html:
+        bonuses.append({
+            "rule": "Structure HTML équilibrée",
+            "bonus": 4,
+            "desc": "Le message est bien aéré et structuré avec des balises HTML claires."
+        })
+
+    final_score = max(5, min(100, score))
+    if final_score >= 85:
+        verdict = "excellent"
+        label = "🟢 Excellente délivrabilité (Boîte de réception garantie)"
+        color = "emerald"
+    elif final_score >= 65:
+        verdict = "medium"
+        label = "🟡 Délivrabilité modérée (Quelques optimisations conseillées)"
+        color = "amber"
+    else:
+        verdict = "danger"
+        label = "🔴 Risque de Spam important (À corriger impérativement)"
+        color = "rose"
+
+    return {
+        "score": final_score,
+        "verdict": verdict,
+        "label": label,
+        "color": color,
+        "penalties": penalties,
+        "bonuses": bonuses,
+        "recommendations": recommendations,
+        "stats": {
+            "subject_length": len(subject),
+            "body_length": len(clean_body_normalized),
+            "spam_words_count": len(detected_spam_words)
+        }
+    }
 
 def apply_template_variables(text, rec_email, rec_data=None):
     """
@@ -434,6 +638,70 @@ def worker_campaign(recipients, subject, content_html, provider, sender_email, s
     })
 
 
+def scheduler_daemon():
+    """
+    Vérifie toutes les 10 secondes si une campagne programmée doit être déclenchée
+    """
+    while True:
+        try:
+            time.sleep(10)
+            now = time.time()
+            tasks = load_scheduled_tasks()
+            changed = False
+            for task in tasks:
+                if task.get("status") == "pending" and task.get("scheduled_timestamp", 0) <= now:
+                    with state_lock:
+                        if not campaign_state["is_running"]:
+                            task["status"] = "executing"
+                            changed = True
+                            save_scheduled_tasks(tasks)
+                            
+                            cfg = load_config()
+                            provider = task.get("provider") or cfg.get("provider", "brevo")
+                            sender_email = task.get("sender_email") or cfg.get("sender_email") or cfg.get("gmail_address", "")
+                            sender_name = task.get("sender_name") or cfg.get("sender_name", "")
+                            pwd = cfg.get("app_password", "")
+                            brevo_key = cfg.get("brevo_api_key", "")
+                            task_id = task.get("id")
+
+                            def run_scheduled_job(t=task, tid=task_id, p=provider, se=sender_email, sn=sender_name, pw=pwd, bk=brevo_key):
+                                try:
+                                    worker_campaign(
+                                        recipients=t.get("recipients", []),
+                                        subject=t.get("subject", ""),
+                                        content_html=t.get("content_html", ""),
+                                        provider=p,
+                                        sender_email=se,
+                                        sender_name=sn,
+                                        app_password=pw,
+                                        brevo_api_key=bk,
+                                        delay_seconds=float(t.get("delay", 2)),
+                                        attachments=t.get("attachments", [])
+                                    )
+                                    all_t = load_scheduled_tasks()
+                                    for item in all_t:
+                                        if item.get("id") == tid:
+                                            item["status"] = "completed"
+                                            item["completed_at"] = time.strftime("%d/%m/%Y à %H:%M")
+                                    save_scheduled_tasks(all_t)
+                                except Exception as exc:
+                                    print(f"[SCHEDULER] Erreur exécution tâche {tid}: {exc}")
+                                    all_t = load_scheduled_tasks()
+                                    for item in all_t:
+                                        if item.get("id") == tid:
+                                            item["status"] = "failed"
+                                            item["error"] = str(exc)
+                                    save_scheduled_tasks(all_t)
+
+                            job_thread = threading.Thread(target=run_scheduled_job, daemon=True)
+                            job_thread.start()
+                            break
+            if changed:
+                save_scheduled_tasks(tasks)
+        except Exception as e:
+            print(f"[SCHEDULER] Exception dans la boucle: {e}")
+
+
 class MailServerHandler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         # Silence normal request logs in console to keep terminal clean
@@ -543,6 +811,16 @@ class MailServerHandler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(csv_content)))
             self.end_headers()
             self.wfile.write(csv_content)
+            return
+
+        elif path == "/api/lists":
+            lists = load_contact_lists()
+            self.send_json({"success": True, "lists": lists})
+            return
+
+        elif path == "/api/schedule/list":
+            tasks = load_scheduled_tasks()
+            self.send_json({"success": True, "tasks": tasks})
             return
 
         self.send_error(404, "Page non trouvée")
@@ -736,6 +1014,172 @@ class MailServerHandler(BaseHTTPRequestHandler):
                 self.send_json({"success": False, "message": str(e)})
             return
 
+        elif path == "/api/lists/save":
+            name = (data.get("name") or "").strip()
+            contacts = data.get("contacts") or []
+            columns = data.get("columns") or []
+            if not name:
+                self.send_json({"success": False, "message": "Veuillez donner un nom à la liste."})
+                return
+            if not contacts:
+                self.send_json({"success": False, "message": "La liste ne contient aucun contact valide."})
+                return
+
+            lists = load_contact_lists()
+            list_id = data.get("id") or str(uuid.uuid4())[:8]
+            existing = next((l for l in lists if str(l.get("id")) == str(list_id)), None)
+
+            list_entry = {
+                "id": list_id,
+                "name": name,
+                "count": len(contacts),
+                "columns": columns,
+                "updated_at": time.strftime("%d/%m/%Y à %H:%M"),
+                "contacts": contacts
+            }
+
+            if existing:
+                list_entry["created_at"] = existing.get("created_at", time.strftime("%d/%m/%Y à %H:%M"))
+                lists = [list_entry if str(l.get("id")) == str(list_id) else l for l in lists]
+            else:
+                list_entry["created_at"] = time.strftime("%d/%m/%Y à %H:%M")
+                lists.insert(0, list_entry)
+
+            save_contact_lists(lists)
+            self.send_json({
+                "success": True, 
+                "message": f"Liste « {name} » ({len(contacts)} contacts) enregistrée avec succès !", 
+                "list": list_entry
+            })
+            return
+
+        elif path == "/api/lists/delete":
+            list_id = str(data.get("id", ""))
+            lists = load_contact_lists()
+            lists = [l for l in lists if str(l.get("id")) != list_id]
+            save_contact_lists(lists)
+            self.send_json({"success": True, "message": "Liste supprimée avec succès."})
+            return
+
+        elif path == "/api/spam-check":
+            subject = data.get("subject", "")
+            content = data.get("content", "")
+            include_sig = data.get("include_signature", True)
+            sig = data.get("email_signature", "")
+            if include_sig and sig:
+                sig_html = sig if ("<" in sig and ">" in sig) else sig.replace("\n", "<br>")
+                content = f"{content}<br><br><div style='border-top:1px solid #e2e8f0;padding-top:12px;margin-top:20px;color:#475569;'>{sig_html}</div>"
+            
+            report = evaluate_spam_score(subject, content)
+            self.send_json({"success": True, "report": report})
+            return
+
+        elif path == "/api/schedule/create":
+            cfg = load_config()
+            provider = data.get("provider") or cfg.get("provider", "brevo")
+            sender_email = data.get("sender_email") or data.get("gmail_address") or cfg.get("sender_email") or cfg.get("gmail_address", "")
+            sender_name = data.get("sender_name") or cfg.get("sender_name", "")
+            pwd = data.get("app_password") or cfg.get("app_password", "")
+            brevo_key = data.get("brevo_api_key") or cfg.get("brevo_api_key", "")
+            
+            recipients = data.get("recipients", [])
+            subject = data.get("subject", "")
+            content = data.get("content", "")
+            delay = float(data.get("delay", 2))
+            attachments = data.get("attachments", [])
+            scheduled_str = data.get("scheduled_datetime", "").strip()
+
+            if not recipients:
+                self.send_json({"success": False, "message": "Aucun destinataire spécifié."})
+                return
+            if not subject:
+                self.send_json({"success": False, "message": "Le sujet de l'email ne peut pas être vide."})
+                return
+            if not scheduled_str:
+                self.send_json({"success": False, "message": "Veuillez choisir une date et heure de programmation."})
+                return
+
+            try:
+                clean_dt = scheduled_str.replace("Z", "").split(".")[0]
+                if "T" in clean_dt:
+                    dt_obj = datetime.datetime.strptime(clean_dt, "%Y-%m-%dT%H:%M")
+                else:
+                    dt_obj = datetime.datetime.strptime(clean_dt, "%Y-%m-%d %H:%M")
+                sched_ts = dt_obj.timestamp()
+            except Exception as e:
+                self.send_json({"success": False, "message": f"Format de date invalide ({scheduled_str}) : {str(e)}"})
+                return
+
+            if sched_ts <= time.time() + 30:
+                self.send_json({"success": False, "message": "La date et l'heure programmées doivent être dans le futur (au moins 1 minute plus tard)."})
+                return
+
+            if provider == "brevo" and (not brevo_key or not sender_email):
+                self.send_json({"success": False, "message": "Veuillez configurer votre clé API Brevo et adresse expéditeur dans Paramètres."})
+                return
+            if provider == "gmail" and (not sender_email or not pwd):
+                self.send_json({"success": False, "message": "Veuillez configurer vos identifiants Gmail dans Paramètres."})
+                return
+
+            include_sig = data.get("include_signature", cfg.get("include_signature", True))
+            sig = data.get("email_signature") if "email_signature" in data else cfg.get("email_signature", "")
+            if include_sig and sig:
+                sig_html = sig if ("<" in sig and ">" in sig) else sig.replace("\n", "<br>")
+                content = f"{content}<br><br><div style='border-top:1px solid #e2e8f0;padding-top:12px;margin-top:20px;color:#475569;'>{sig_html}</div>"
+
+            task_id = str(uuid.uuid4())[:8]
+            formatted_target = dt_obj.strftime("%d/%m/%Y à %H:%M")
+            task = {
+                "id": task_id,
+                "subject": subject,
+                "content_html": content,
+                "recipients": recipients,
+                "provider": provider,
+                "sender_email": sender_email,
+                "sender_name": sender_name,
+                "delay": delay,
+                "attachments": attachments,
+                "scheduled_datetime": scheduled_str,
+                "scheduled_formatted": formatted_target,
+                "scheduled_timestamp": sched_ts,
+                "created_at": time.strftime("%d/%m/%Y à %H:%M"),
+                "status": "pending"
+            }
+
+            tasks = load_scheduled_tasks()
+            tasks.insert(0, task)
+            save_scheduled_tasks(tasks)
+            self.send_json({
+                "success": True, 
+                "message": f"Campagne programmée avec succès pour le {formatted_target} ({len(recipients)} destinataires) !", 
+                "task": task
+            })
+            return
+
+        elif path == "/api/schedule/cancel":
+            task_id = str(data.get("id", ""))
+            tasks = load_scheduled_tasks()
+            found = False
+            for t in tasks:
+                if str(t.get("id")) == task_id and t.get("status") == "pending":
+                    t["status"] = "cancelled"
+                    t["cancelled_at"] = time.strftime("%d/%m/%Y à %H:%M")
+                    found = True
+            save_scheduled_tasks(tasks)
+            if found:
+                self.send_json({"success": True, "message": "Campagne programmée annulée avec succès."})
+            else:
+                self.send_json({"success": False, "message": "Tâche introuvable ou déjà traitée."})
+            return
+
+        elif path == "/api/schedule/delete":
+            task_id = str(data.get("id", ""))
+            tasks = load_scheduled_tasks()
+            tasks = [t for t in tasks if str(t.get("id")) != task_id]
+            save_scheduled_tasks(tasks)
+            self.send_json({"success": True, "message": "Tâche supprimée."})
+            return
+
         self.send_error(404, "Endpoint non trouvé")
 
 
@@ -749,6 +1193,10 @@ def run():
     print("=" * 60)
     print(" Appuyez sur Ctrl+C pour arrêter le serveur.")
     
+    # Lancement du planificateur en tâche de fond (daemon)
+    sched_thread = threading.Thread(target=scheduler_daemon, daemon=True)
+    sched_thread.start()
+
     # Ouvrir le navigateur uniquement en local (pas sur un serveur cloud comme Render)
     if "PORT" not in os.environ:
         threading.Timer(1.2, lambda: webbrowser.open(url)).start()

@@ -107,6 +107,38 @@
               </span>
             </div>
 
+            <!-- Contact Lists & Groups Quick Selector -->
+            <div class="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
+              <div class="flex items-center justify-between">
+                <label for="saved-lists-dropdown" class="text-xs font-bold text-slate-700 flex items-center space-x-1.5">
+                  <span>👥 Mes Groupes de contacts</span>
+                  <span id="saved-lists-count-badge" class="text-[10px] bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded-full font-semibold">0</span>
+                </label>
+                <div class="flex items-center space-x-1">
+                  <button 
+                    type="button" 
+                    onclick="saveCurrentAsList()" 
+                    class="text-[11px] font-bold text-indigo-700 hover:text-indigo-900 bg-white hover:bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-200 shadow-2xs transition flex items-center space-x-1 cursor-pointer"
+                    title="Sauvegarder les contacts actuels comme liste réutilisable">
+                    <span>💾 Enregistrer</span>
+                  </button>
+                  <button 
+                    type="button" 
+                    onclick="openManageListsModal()" 
+                    class="text-[11px] font-semibold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 px-1.5 py-0.5 rounded-lg border border-slate-200 shadow-2xs transition cursor-pointer"
+                    title="Gérer toutes mes listes de contacts">
+                    <span>⚙️</span>
+                  </button>
+                </div>
+              </div>
+              <select 
+                id="saved-lists-dropdown" 
+                onchange="onSelectListChange(this.value)" 
+                class="w-full text-xs font-medium px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white focus:border-indigo-500 outline-none transition cursor-pointer">
+                <option value="">-- Charger une liste enregistrée --</option>
+              </select>
+            </div>
+
             <!-- Upload Zone -->
             <div>
               <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
@@ -302,29 +334,103 @@
               </div>
             </div>
 
+            <!-- SCHEDULING MODE SECTION (Option 4) -->
+            <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/90 space-y-2.5">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-700 flex items-center space-x-1.5">
+                  <span>⏰ Planification de l'envoi</span>
+                </span>
+                <div class="flex items-center space-x-1 bg-white p-0.5 rounded-lg border border-slate-200 text-xs">
+                  <button 
+                    type="button" 
+                    id="btn-mode-now" 
+                    onclick="setScheduleMode('now')" 
+                    class="px-2.5 py-1 rounded-md font-bold text-indigo-700 bg-indigo-50 shadow-2xs transition">
+                    ⚡ Immédiat
+                  </button>
+                  <button 
+                    type="button" 
+                    id="btn-mode-later" 
+                    onclick="setScheduleMode('later')" 
+                    class="px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900 transition">
+                    ⏰ Programmer
+                  </button>
+                </div>
+              </div>
+
+              <!-- Scheduled date picker (revealed if later) -->
+              <div id="schedule-picker-box" class="hidden pt-2 border-t border-slate-200/70 space-y-2">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <label for="input-schedule-time" class="text-xs font-semibold text-slate-600">
+                    Date et heure d'envoi :
+                  </label>
+                  <input 
+                    type="datetime-local" 
+                    id="input-schedule-time" 
+                    onchange="onScheduleTimeChange()" 
+                    class="text-xs font-medium px-3 py-1.5 rounded-lg border border-slate-200 bg-white focus:border-indigo-500 outline-none">
+                </div>
+                <div id="schedule-preview-text" class="text-[11px] font-semibold text-indigo-700 bg-indigo-50/80 p-2 rounded-lg border border-indigo-100 flex items-center space-x-1.5">
+                  <span>📅 Choisissez la date et l'heure pour déclencher l'envoi automatiquement.</span>
+                </div>
+              </div>
+            </div>
+
             <!-- ACTION BUTTONS -->
             <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-              <button 
-                type="button" 
-                onclick="openTestModal()" 
-                class="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-semibold transition flex items-center justify-center space-x-2">
-                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.942a4.5 4.5 0 01-4.66 0L12 15.3m7.8 0A2.25 2.25 0 0121 17.25v2.25A2.25 2.25 0 0118.75 21.75H5.25A2.25 2.25 0 013 19.5v-2.25a2.25 2.25 0 011.2-1.95L5 14.5"/></svg>
-                <span>Tester d'abord</span>
-              </button>
+              <div class="flex items-center space-x-2 w-full sm:w-auto">
+                <button 
+                  type="button" 
+                  onclick="openTestModal()" 
+                  class="flex-1 sm:flex-none px-3.5 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs sm:text-sm font-semibold transition flex items-center justify-center space-x-1.5">
+                  <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.942a4.5 4.5 0 01-4.66 0L12 15.3m7.8 0A2.25 2.25 0 0121 17.25v2.25A2.25 2.25 0 0118.75 21.75H5.25A2.25 2.25 0 013 19.5v-2.25a2.25 2.25 0 011.2-1.95L5 14.5"/></svg>
+                  <span>Tester d'abord</span>
+                </button>
+
+                <!-- NEW: ANTI-SPAM TESTER BUTTON (Option 2) -->
+                <button 
+                  type="button" 
+                  id="btn-anti-spam"
+                  onclick="runSpamScoreCheck()" 
+                  class="flex-1 sm:flex-none px-3.5 py-2.5 rounded-xl border border-indigo-200 hover:bg-indigo-50/80 text-indigo-700 text-xs sm:text-sm font-bold transition flex items-center justify-center space-x-1.5 bg-indigo-50/40"
+                  title="Analyser le risque spam et le score de délivrabilité">
+                  <span class="text-sm">🛡️</span>
+                  <span>Spam-Score</span>
+                </button>
+              </div>
 
               <button 
                 type="button" 
                 id="btn-start-campaign"
                 onclick="confirmAndStart()" 
                 class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-sm font-bold shadow-md shadow-indigo-200 transition flex items-center justify-center space-x-2">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
-                <span>Lancer la campagne</span>
+                <svg id="icon-start-btn" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
+                <span id="label-start-btn">Lancer la campagne</span>
               </button>
             </div>
 
           </div>
         </div>
 
+      </div>
+
+      <!-- PENDING SCHEDULED CAMPAIGNS CARD (Option 4) -->
+      <div id="scheduled-campaigns-card" class="hidden bg-white rounded-2xl border border-indigo-100 shadow-sm p-4 sm:p-5 space-y-3 bg-gradient-to-r from-indigo-50/40 to-purple-50/30">
+        <div class="flex items-center justify-between pb-2 border-b border-indigo-100">
+          <div class="flex items-center space-x-2">
+            <span class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-sm">⏰</span>
+            <div>
+              <h3 class="font-bold text-slate-800 text-sm">Campagnes programmées en attente</h3>
+              <p class="text-[11px] text-slate-500">Ces envois se déclencheront automatiquement à l'heure indiquée.</p>
+            </div>
+          </div>
+          <button onclick="fetchScheduledTasks()" class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center space-x-1">
+            <span>🔄 Actualiser</span>
+          </button>
+        </div>
+        <div id="scheduled-tasks-list" class="space-y-2">
+          <!-- Dynamically filled -->
+        </div>
       </div>
 
       <!-- LIVE PROGRESS & STATUS CARD -->
@@ -908,6 +1014,123 @@
     </div>
   </div>
 
+  <!-- MODAL: GESTIONNAIRE DE LISTES ET GROUPES (Option 1) -->
+  <div id="modal-manage-lists" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-8 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <h3 class="font-bold text-slate-900 text-base sm:text-lg flex items-center space-x-2">
+            <span>👥 Mes Groupes & Listes de Contacts</span>
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">Enregistrez et réutilisez vos listes de destinataires en un clic.</p>
+        </div>
+        <button onclick="closeManageListsModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1 leading-none">&times;</button>
+      </div>
+
+      <div class="flex items-center justify-between p-3 rounded-xl bg-indigo-50/70 border border-indigo-100">
+        <div>
+          <h4 class="text-xs font-bold text-indigo-950">Sauvegarder les contacts actuels</h4>
+          <p class="text-[11px] text-indigo-700">Enregistre les emails actuellement saisis dans l'éditeur comme nouvelle liste.</p>
+        </div>
+        <button 
+          type="button" 
+          onclick="saveCurrentAsList()" 
+          class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition flex items-center space-x-1 flex-shrink-0 cursor-pointer">
+          <span>+ Enregistrer</span>
+        </button>
+      </div>
+
+      <!-- Container of all saved lists -->
+      <div id="saved-lists-modal-container" class="space-y-2.5 max-h-[50vh] overflow-y-auto custom-scroll pr-1">
+        <!-- Dynamically filled by JS -->
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 text-right">
+        <button onclick="closeManageListsModal()" class="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: TESTEUR ANTI-SPAM ET SCORE DE DÉLIVRABILITÉ (Option 2) -->
+  <div id="modal-spam-score" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-8 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <h3 class="font-bold text-slate-900 text-base sm:text-lg flex items-center space-x-2">
+            <span>🛡️ Analyse de Délivrabilité & Anti-Spam</span>
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">Diagnostic complet pour atterrir en boîte de réception principale.</p>
+        </div>
+        <button onclick="closeSpamScoreModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1 leading-none">&times;</button>
+      </div>
+
+      <!-- Score Hero Box -->
+      <div id="spam-hero-box" class="p-4 rounded-2xl border flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 text-center sm:text-left">
+        <div>
+          <div class="flex items-center justify-center sm:justify-start space-x-2 mb-1">
+            <span id="spam-score-badge" class="px-3 py-1 rounded-full text-xs font-bold border">Score</span>
+            <span id="spam-verdict-title" class="text-sm font-bold text-slate-800"></span>
+          </div>
+          <p id="spam-hero-desc" class="text-xs text-slate-600 mt-1 max-w-sm"></p>
+        </div>
+        <div class="flex flex-col items-center justify-center flex-shrink-0">
+          <div id="spam-circle-score" class="w-16 h-16 rounded-2xl flex items-center justify-center font-extrabold text-2xl shadow-inner">
+            --
+          </div>
+          <span class="text-[10px] text-slate-400 font-bold uppercase mt-1">sur 100</span>
+        </div>
+      </div>
+
+      <!-- Stats Bar -->
+      <div class="grid grid-cols-3 gap-2 text-center text-xs">
+        <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+          <span class="text-[10px] text-slate-400 font-semibold uppercase block">Taille Objet</span>
+          <span id="spam-stat-subject" class="font-bold text-slate-800 text-sm">-</span>
+        </div>
+        <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+          <span class="text-[10px] text-slate-400 font-semibold uppercase block">Taille Message</span>
+          <span id="spam-stat-body" class="font-bold text-slate-800 text-sm">-</span>
+        </div>
+        <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+          <span class="text-[10px] text-slate-400 font-semibold uppercase block">Mots Spam</span>
+          <span id="spam-stat-words" class="font-bold text-slate-800 text-sm">-</span>
+        </div>
+      </div>
+
+      <!-- Warnings / Penalties Container -->
+      <div id="spam-penalties-section" class="space-y-2">
+        <h4 class="text-xs font-bold text-slate-700 flex items-center space-x-1">
+          <span>⚠️ Points d'attention détectés</span>
+        </h4>
+        <div id="spam-penalties-list" class="space-y-1.5 max-h-36 overflow-y-auto custom-scroll pr-1 text-xs">
+          <!-- Dynamically filled -->
+        </div>
+      </div>
+
+      <!-- Bonuses / Passed checks Container -->
+      <div id="spam-bonuses-section" class="space-y-2">
+        <h4 class="text-xs font-bold text-slate-700 flex items-center space-x-1">
+          <span>✅ Facteurs positifs de délivrabilité</span>
+        </h4>
+        <div id="spam-bonuses-list" class="space-y-1.5 max-h-32 overflow-y-auto custom-scroll pr-1 text-xs">
+          <!-- Dynamically filled -->
+        </div>
+      </div>
+
+      <!-- Recommendations Box -->
+      <div id="spam-recommendations-section" class="p-3 rounded-xl bg-indigo-50/60 border border-indigo-100 space-y-1 text-xs">
+        <span class="font-bold text-indigo-950 block">💡 Conseils d'amélioration :</span>
+        <ul id="spam-recommendations-list" class="list-disc list-inside text-indigo-900 space-y-0.5 text-[11px]">
+          <!-- Dynamically filled -->
+        </ul>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 text-right">
+        <button onclick="closeSpamScoreModal()" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition">Compris, j'optimise mon message</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MOBILE BOTTOM NAVIGATION (Barre fixe moderne pour smartphones) -->
   <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 py-1.5 px-2 flex justify-around items-center shadow-lg">
     <button onclick="switchTab('sender')" id="mobile-tab-sender" class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl text-indigo-600 font-bold transition">
@@ -936,10 +1159,15 @@
     let parsedContactsList = [];
     let detectedColumns = [];
     let lastFocusedInput = 'body';
+    let savedContactLists = [];
+    let scheduledTasksList = [];
+    let currentScheduleMode = 'now'; // 'now' or 'later'
 
     // Initialisation
     document.addEventListener("DOMContentLoaded", () => {
       fetchConfig();
+      fetchContactLists();
+      fetchScheduledTasks();
       // Synchronisation du champ delay
       const slider = document.getElementById("delay-slider");
       document.getElementById("delay-display").textContent = parseFloat(slider.value).toFixed(1) + " sec";
@@ -1730,14 +1958,40 @@
       const estSeconds = emails.length * delay;
       const estMin = (estSeconds / 60).toFixed(1);
 
-      if (!confirm(`🚀 Êtes-vous sûr de vouloir lancer l'envoi de ${emails.length} emails via ${currentProvider.toUpperCase()} ?\n\nDélai: ${delay}s entre chaque email (Durée estimée: ~${estMin} minutes).`)) {
-        return;
-      }
-
       const includeSig = document.getElementById("chk-include-signature") ? document.getElementById("chk-include-signature").checked : true;
       const sigEditor = document.getElementById("cfg-signature-editor");
       let signature = sigEditor ? sigEditor.innerHTML.trim() : (savedConfig.email_signature || "");
       if (signature === "<br>" || signature === "<p></p>") signature = "";
+
+      if (currentScheduleMode === 'later') {
+        const timeInput = document.getElementById("input-schedule-time");
+        const schedTime = timeInput.value;
+        if (!schedTime) {
+          alert("⚠️ Veuillez choisir la date et l'heure de programmation.");
+          timeInput.focus();
+          return;
+        }
+        const schedDate = new Date(schedTime);
+        const now = new Date();
+        if (schedDate.getTime() <= now.getTime() + 45000) {
+          alert("⚠️ L'heure programmée doit être dans le futur (au moins 1 minute plus tard).");
+          timeInput.focus();
+          return;
+        }
+
+        const options = { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+        const formatted = schedDate.toLocaleDateString('fr-FR', options);
+        if (!confirm(`⏰ Confirmez-vous la programmation de cette campagne pour le ${formatted} (${emails.length} destinataires via ${currentProvider.toUpperCase()}) ?`)) {
+          return;
+        }
+
+        scheduleCampaign(emails, subject, content, delay, includeSig, signature);
+        return;
+      }
+
+      if (!confirm(`🚀 Êtes-vous sûr de vouloir lancer l'envoi de ${emails.length} emails via ${currentProvider.toUpperCase()} ?\n\nDélai: ${delay}s entre chaque email (Durée estimée: ~${estMin} minutes).`)) {
+        return;
+      }
 
       startCampaign(emails, subject, content, delay, includeSig, signature);
     }
@@ -2152,6 +2406,513 @@
         alert("✅ Campagne rechargée avec succès dans l'éditeur !");
       } catch (e) {
         alert("Impossible de recharger la campagne.");
+      }
+    }
+
+    // ===============================================================
+    // OPTION 1: GESTIONNAIRE DE LISTES DE CONTACTS ET GROUPES
+    // ===============================================================
+    async function fetchContactLists() {
+      try {
+        const res = await fetch("/api/lists");
+        const data = await res.json();
+        savedContactLists = data.lists || [];
+        renderListsDropdown();
+        renderListsModal();
+      } catch (e) {
+        console.error("Erreur chargement listes de contacts:", e);
+      }
+    }
+
+    function renderListsDropdown() {
+      const dropdown = document.getElementById("saved-lists-dropdown");
+      const badge = document.getElementById("saved-lists-count-badge");
+      if (!dropdown) return;
+
+      if (badge) badge.textContent = savedContactLists.length;
+
+      dropdown.innerHTML = `<option value="">-- Charger une liste enregistrée (${savedContactLists.length}) --</option>` + 
+        savedContactLists.map(l => `
+          <option value="${l.id}">${l.name} (${l.count} contacts)</option>
+        `).join("");
+    }
+
+    function renderListsModal() {
+      const container = document.getElementById("saved-lists-modal-container");
+      if (!container) return;
+
+      if (savedContactLists.length === 0) {
+        container.innerHTML = `
+          <div class="p-6 text-center text-slate-400 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
+            <span class="text-2xl block">📂</span>
+            <p class="text-xs font-semibold text-slate-600">Aucune liste enregistrée pour l'instant</p>
+            <p class="text-[11px] text-slate-400 max-w-xs mx-auto">Importez un fichier Excel ou collez vos emails, puis cliquez sur « Sauvegarder » pour créer votre première liste.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = savedContactLists.map(l => {
+        const cols = l.columns && l.columns.length > 0 ? 
+          l.columns.map(c => `<span class="bg-indigo-50 text-indigo-700 text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold">{${c}}</span>`).join(" ") : 
+          '<span class="text-slate-400 text-[10px] italic">Email uniquement</span>';
+
+        return `
+          <div class="p-3.5 rounded-xl border border-slate-200 bg-white hover:border-indigo-200 transition space-y-2">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <span class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center font-bold text-xs">👥</span>
+                <div>
+                  <h4 class="font-bold text-slate-800 text-xs sm:text-sm">${l.name}</h4>
+                  <span class="text-[10px] text-slate-400">${l.created_at || ""} • <b>${l.count} contact(s)</b></span>
+                </div>
+              </div>
+              <div class="flex items-center space-x-1.5">
+                <button 
+                  type="button" 
+                  onclick="applyContactList('${l.id}')" 
+                  class="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition shadow-2xs cursor-pointer">
+                  Charger
+                </button>
+                <button 
+                  type="button" 
+                  onclick="deleteContactList('${l.id}')" 
+                  class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer" 
+                  title="Supprimer la liste">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                </button>
+              </div>
+            </div>
+            <div class="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+              <div class="flex flex-wrap items-center gap-1">
+                <span class="text-[10px] text-slate-400">Colonnes :</span>
+                ${cols}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function onSelectListChange(listId) {
+      if (!listId) return;
+      applyContactList(listId);
+    }
+
+    function openManageListsModal() {
+      renderListsModal();
+      document.getElementById("modal-manage-lists").classList.remove("hidden");
+    }
+
+    function closeManageListsModal() {
+      document.getElementById("modal-manage-lists").classList.add("hidden");
+    }
+
+    async function saveCurrentAsList() {
+      const rawEmails = extractValidEmails(document.getElementById("emails-input").value);
+      if (rawEmails.length === 0) {
+        alert("⚠️ Aucun email valide à enregistrer. Veuillez d'abord ajouter des destinataires.");
+        return;
+      }
+
+      const listName = prompt("🏷️ Nommez cette liste de contacts (Ex: Membres EPIK 2026, Partenaires Gold, etc.) :", `Groupe ${new Date().toLocaleDateString('fr-FR')}`);
+      if (!listName || !listName.trim()) return;
+
+      let contactsToSave = [];
+      if (parsedContactsList && parsedContactsList.length > 0) {
+        contactsToSave = parsedContactsList;
+      } else {
+        contactsToSave = rawEmails.map(e => ({ email: e }));
+      }
+
+      try {
+        const res = await fetch("/api/lists/save", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            name: listName.trim(),
+            contacts: contactsToSave,
+            columns: detectedColumns || []
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert("✅ " + data.message);
+          await fetchContactLists();
+          const dropdown = document.getElementById("saved-lists-dropdown");
+          if (dropdown && data.list) {
+            dropdown.value = data.list.id;
+          }
+        } else {
+          alert("Erreur: " + data.message);
+        }
+      } catch (e) {
+        alert("Impossible d'enregistrer la liste.");
+      }
+    }
+
+    function applyContactList(listId) {
+      const target = savedContactLists.find(l => String(l.id) === String(listId));
+      if (!target) return;
+
+      const contacts = target.contacts || [];
+      if (contacts.length === 0) {
+        alert("Cette liste ne contient aucun contact.");
+        return;
+      }
+
+      parsedContactsList = contacts;
+      detectedColumns = target.columns || [];
+
+      const emails = contacts.map(c => {
+        if (typeof c === "object") {
+          return (c.email || c.Email || c.mail || c.Mail || "").trim();
+        }
+        return String(c).trim();
+      }).filter(e => e && e.includes("@"));
+
+      document.getElementById("emails-input").value = Array.from(new Set(emails)).join("\n");
+      updateEmailCount();
+      renderDetectedTags();
+
+      closeManageListsModal();
+      const dropdown = document.getElementById("saved-lists-dropdown");
+      if (dropdown) dropdown.value = listId;
+
+      const banner = document.getElementById("clean-feedback-banner");
+      const textEl = document.getElementById("clean-feedback-text");
+      if (banner && textEl) {
+        banner.className = "mb-2 p-2.5 rounded-xl text-xs font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200 flex items-center justify-between";
+        textEl.innerHTML = `✅ Liste <b>« ${target.name} »</b> (${contacts.length} contacts) chargée avec succès !`;
+        banner.classList.remove("hidden");
+      }
+    }
+
+    async function deleteContactList(listId) {
+      if (!confirm("Voulez-vous vraiment supprimer cette liste de contacts ?")) return;
+      try {
+        const res = await fetch("/api/lists/delete", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({id: listId})
+        });
+        await fetchContactLists();
+      } catch (e) {
+        alert("Erreur lors de la suppression de la liste.");
+      }
+    }
+
+    // ===============================================================
+    // OPTION 2: TESTEUR ANTI-SPAM ET SCORE DE DÉLIVRABILITÉ
+    // ===============================================================
+    async function runSpamScoreCheck() {
+      const subject = document.getElementById("subject-input").value.trim();
+      const body = document.getElementById("body-input").value.trim();
+      const btn = document.getElementById("btn-anti-spam");
+
+      const includeSig = document.getElementById("chk-include-signature") ? document.getElementById("chk-include-signature").checked : true;
+      const sigEditor = document.getElementById("cfg-signature-editor");
+      let signature = sigEditor ? sigEditor.innerHTML.trim() : (savedConfig.email_signature || "");
+      if (signature === "<br>" || signature === "<p></p>") signature = "";
+
+      btn.disabled = true;
+      const originalHtml = btn.innerHTML;
+      btn.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-1.5 h-3.5 w-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+        </svg>
+        <span>Analyse...</span>
+      `;
+
+      try {
+        const res = await fetch("/api/spam-check", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            subject: subject,
+            content: body,
+            include_signature: includeSig,
+            email_signature: signature
+          })
+        });
+        const data = await res.json();
+        if (data.success && data.report) {
+          renderSpamReport(data.report);
+          document.getElementById("modal-spam-score").classList.remove("hidden");
+        } else {
+          alert("Erreur lors de l'analyse du spam score.");
+        }
+      } catch (e) {
+        alert("Impossible de joindre le serveur pour l'analyse anti-spam.");
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+      }
+    }
+
+    function closeSpamScoreModal() {
+      document.getElementById("modal-spam-score").classList.add("hidden");
+    }
+
+    function renderSpamReport(report) {
+      const score = report.score;
+      const heroBox = document.getElementById("spam-hero-box");
+      const circle = document.getElementById("spam-circle-score");
+      const badge = document.getElementById("spam-score-badge");
+      const title = document.getElementById("spam-verdict-title");
+      const desc = document.getElementById("spam-hero-desc");
+
+      circle.textContent = score;
+
+      if (report.verdict === "excellent") {
+        heroBox.className = "p-4 rounded-2xl border flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 text-center sm:text-left bg-emerald-50/80 border-emerald-200 text-emerald-950";
+        circle.className = "w-16 h-16 rounded-2xl flex items-center justify-center font-extrabold text-2xl shadow-inner bg-emerald-600 text-white";
+        badge.className = "px-3 py-1 rounded-full text-xs font-bold border bg-emerald-100 text-emerald-800 border-emerald-300";
+        badge.textContent = "🟢 Excellent";
+        title.textContent = "Boîte Principale Garantie";
+        desc.textContent = "Votre message respecte les meilleures pratiques anti-spam. Il a de très fortes chances d'atterrir directement dans la boîte principale de vos destinataires sans passer par Spam ni Promotions.";
+      } else if (report.verdict === "medium") {
+        heroBox.className = "p-4 rounded-2xl border flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 text-center sm:text-left bg-amber-50/80 border-amber-200 text-amber-950";
+        circle.className = "w-16 h-16 rounded-2xl flex items-center justify-center font-extrabold text-2xl shadow-inner bg-amber-500 text-white";
+        badge.className = "px-3 py-1 rounded-full text-xs font-bold border bg-amber-100 text-amber-800 border-amber-300";
+        badge.textContent = "🟡 Modéré";
+        title.textContent = "Quelques points à peaufiner";
+        desc.textContent = "Votre email est globalement acceptable, mais certains éléments (ponctuation, mots commerciaux ou longueur) risquent de le dévier vers l'onglet Promotions ou Spam.";
+      } else {
+        heroBox.className = "p-4 rounded-2xl border flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 text-center sm:text-left bg-rose-50/80 border-rose-200 text-rose-950";
+        circle.className = "w-16 h-16 rounded-2xl flex items-center justify-center font-extrabold text-2xl shadow-inner bg-rose-600 text-white";
+        badge.className = "px-3 py-1 rounded-full text-xs font-bold border bg-rose-100 text-rose-800 border-rose-300";
+        badge.textContent = "🔴 Risque Spam";
+        title.textContent = "Attention : Risque élevé de blocage";
+        desc.textContent = "Plusieurs signaux négatifs importants ont été détectés. Les algorithmes de messagerie risquent de filtrer votre email directement dans le dossier Spam.";
+      }
+
+      // Stats
+      document.getElementById("spam-stat-subject").textContent = `${report.stats.subject_length} car.`;
+      document.getElementById("spam-stat-body").textContent = `${report.stats.body_length} car.`;
+      document.getElementById("spam-stat-words").textContent = report.stats.spam_words_count;
+
+      // Penalties
+      const penaltiesContainer = document.getElementById("spam-penalties-list");
+      if (report.penalties && report.penalties.length > 0) {
+        penaltiesContainer.innerHTML = report.penalties.map(p => `
+          <div class="p-2.5 rounded-xl bg-rose-50/80 border border-rose-200 flex items-start space-x-2 text-rose-900">
+            <span class="text-rose-600 font-bold mt-0.5">⚠️</span>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold">${p.rule}</span>
+                <span class="font-bold text-[10px] bg-rose-200 text-rose-800 px-1.5 py-0.5 rounded">-${p.penalty} pts</span>
+              </div>
+              <p class="text-[11px] text-rose-700 mt-0.5">${p.desc}</p>
+            </div>
+          </div>
+        `).join("");
+      } else {
+        penaltiesContainer.innerHTML = `<div class="p-2.5 rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-semibold">✨ Aucune pénalité ! Aucun mot spam ni formatage agressif détecté.</div>`;
+      }
+
+      // Bonuses
+      const bonusesContainer = document.getElementById("spam-bonuses-list");
+      if (report.bonuses && report.bonuses.length > 0) {
+        bonusesContainer.innerHTML = report.bonuses.map(b => `
+          <div class="p-2 rounded-xl bg-emerald-50/80 border border-emerald-200 flex items-start space-x-2 text-emerald-900">
+            <span class="text-emerald-600 font-bold mt-0.5">✅</span>
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold">${b.rule}</span>
+                <span class="font-bold text-[10px] bg-emerald-200 text-emerald-800 px-1.5 py-0.5 rounded">+${b.bonus} pts</span>
+              </div>
+              <p class="text-[11px] text-emerald-700 mt-0.5">${b.desc}</p>
+            </div>
+          </div>
+        `).join("");
+      } else {
+        bonusesContainer.innerHTML = `<div class="p-2 text-xs text-slate-400 italic">Aucun facteur positif spécifique.</div>`;
+      }
+
+      // Recommendations
+      const recList = document.getElementById("spam-recommendations-list");
+      if (report.recommendations && report.recommendations.length > 0) {
+        recList.innerHTML = report.recommendations.map(r => `<li>${r}</li>`).join("");
+      } else {
+        recList.innerHTML = `<li>Votre email est parfaitement optimisé. Vous pouvez lancer votre campagne en toute confiance !</li>`;
+      }
+    }
+
+    // ===============================================================
+    // OPTION 4: ENVOI PROGRAMMÉ ET GESTION DES TÂCHES PLANIFIÉES
+    // ===============================================================
+    function setScheduleMode(mode) {
+      currentScheduleMode = mode;
+      const btnNow = document.getElementById("btn-mode-now");
+      const btnLater = document.getElementById("btn-mode-later");
+      const pickerBox = document.getElementById("schedule-picker-box");
+      const startBtnLabel = document.getElementById("label-start-btn");
+
+      if (mode === 'now') {
+        btnNow.className = "px-2.5 py-1 rounded-md font-bold text-indigo-700 bg-indigo-50 shadow-2xs transition cursor-pointer";
+        btnLater.className = "px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900 transition cursor-pointer";
+        pickerBox.classList.add("hidden");
+        startBtnLabel.textContent = "Lancer la campagne";
+      } else {
+        btnLater.className = "px-2.5 py-1 rounded-md font-bold text-indigo-700 bg-indigo-50 shadow-2xs transition cursor-pointer";
+        btnNow.className = "px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900 transition cursor-pointer";
+        pickerBox.classList.remove("hidden");
+        
+        // Initialiser date par défaut à maintenant + 30 min
+        const input = document.getElementById("input-schedule-time");
+        if (!input.value) {
+          const d = new Date(Date.now() + 30 * 60000);
+          const iso = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+          input.value = iso;
+        }
+        onScheduleTimeChange();
+      }
+    }
+
+    function onScheduleTimeChange() {
+      const input = document.getElementById("input-schedule-time");
+      const preview = document.getElementById("schedule-preview-text");
+      const startBtnLabel = document.getElementById("label-start-btn");
+
+      if (!input.value) {
+        preview.innerHTML = `<span>📅 Veuillez choisir une date et une heure.</span>`;
+        startBtnLabel.textContent = "Programmer l'envoi";
+        return;
+      }
+
+      const d = new Date(input.value);
+      const options = { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+      const formatted = d.toLocaleDateString('fr-FR', options);
+      preview.innerHTML = `<span>⏰ <b>Envoi programmé pour le :</b> ${formatted}</span>`;
+      startBtnLabel.textContent = `Programmer pour le ${d.toLocaleDateString('fr-FR', {day: '2-digit', month: '2-digit'})} à ${d.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'})}`;
+    }
+
+    async function fetchScheduledTasks() {
+      try {
+        const res = await fetch("/api/schedule/list");
+        const data = await res.json();
+        scheduledTasksList = data.tasks || [];
+        renderScheduledTasksCard();
+      } catch (e) {
+        console.error("Erreur chargement tâches programmées:", e);
+      }
+    }
+
+    function renderScheduledTasksCard() {
+      const card = document.getElementById("scheduled-campaigns-card");
+      const list = document.getElementById("scheduled-tasks-list");
+      if (!card || !list) return;
+
+      const pendingTasks = scheduledTasksList.filter(t => t.status === "pending" || t.status === "executing");
+      if (pendingTasks.length === 0) {
+        card.classList.add("hidden");
+        return;
+      }
+
+      card.classList.remove("hidden");
+      list.innerHTML = pendingTasks.map(t => {
+        const isExecuting = t.status === "executing";
+        const statusBadge = isExecuting ? 
+          `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 animate-pulse">En cours d'exécution...</span>` :
+          `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-800">Prévu le ${t.scheduled_formatted}</span>`;
+
+        return `
+          <div class="p-3 bg-white rounded-xl border border-indigo-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 shadow-2xs">
+            <div class="min-w-0">
+              <div class="flex items-center space-x-2">
+                <span class="font-bold text-xs text-slate-800 truncate">${t.subject}</span>
+                ${statusBadge}
+              </div>
+              <p class="text-[11px] text-slate-500 mt-0.5">
+                <b>${t.recipients ? t.recipients.length : 0} destinataire(s)</b> • Via ${t.provider.toUpperCase()} • Enregistré le ${t.created_at}
+              </p>
+            </div>
+            <div class="flex items-center space-x-2 flex-shrink-0">
+              ${!isExecuting ? `
+                <button 
+                  type="button" 
+                  onclick="cancelScheduledTask('${t.id}')" 
+                  class="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold transition border border-rose-200 cursor-pointer">
+                  Annuler
+                </button>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    async function cancelScheduledTask(taskId) {
+      if (!confirm("Voulez-vous vraiment annuler cette campagne programmée ?")) return;
+      try {
+        const res = await fetch("/api/schedule/cancel", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({id: taskId})
+        });
+        const data = await res.json();
+        alert(data.message);
+        fetchScheduledTasks();
+      } catch (e) {
+        alert("Erreur lors de l'annulation.");
+      }
+    }
+
+    async function scheduleCampaign(recipients, subject, content, delay, includeSig, signature) {
+      const timeInput = document.getElementById("input-schedule-time");
+      const schedTime = timeInput.value;
+      if (!schedTime) {
+        alert("⚠️ Veuillez sélectionner la date et l'heure de programmation.");
+        timeInput.focus();
+        return;
+      }
+
+      let finalRecipients = recipients;
+      if (parsedContactsList && parsedContactsList.length > 0) {
+        finalRecipients = parsedContactsList;
+      }
+
+      const payload = {
+        provider: currentProvider,
+        recipients: finalRecipients,
+        subject: subject,
+        content: content,
+        delay: delay,
+        attachments: attachmentsList,
+        scheduled_datetime: schedTime,
+        include_signature: includeSig !== undefined ? includeSig : true,
+        email_signature: signature || ""
+      };
+
+      const btn = document.getElementById("btn-start-campaign");
+      btn.disabled = true;
+      btn.classList.add("opacity-75");
+
+      try {
+        const res = await fetch("/api/schedule/create", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert("🎉 " + data.message);
+          fetchScheduledTasks();
+          const card = document.getElementById("scheduled-campaigns-card");
+          if (card) {
+            card.classList.remove("hidden");
+            card.scrollIntoView({ behavior: 'smooth' });
+          }
+        } else {
+          alert("Erreur: " + data.message);
+        }
+      } catch (e) {
+        alert("Erreur lors de la programmation.");
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove("opacity-75");
       }
     }
   </script>

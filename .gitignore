@@ -1,6 +1,8 @@
 # Données sensibles et configuration locale
 config.json
 history.json
+contact_lists.json
+scheduled_tasks.json
 
 # Cache Python
 __pycache__/
