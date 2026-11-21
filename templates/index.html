@@ -233,22 +233,31 @@
               </div>
             </div>
 
-            <!-- TEMPLATES PRO QUICK SELECTOR BANNER -->
-            <div class="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-indigo-50/90 to-purple-50/90 border border-indigo-100">
+            <!-- TEMPLATES PRO & CUSTOM QUICK SELECTOR BANNER -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between p-3 rounded-xl bg-gradient-to-r from-indigo-50/90 to-purple-50/90 border border-indigo-100 gap-2.5">
               <div class="flex items-center space-x-2.5">
                 <span class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0">✨</span>
                 <div>
-                  <h4 class="text-xs font-bold text-indigo-950">Modèles d'emails prêts à l'emploi</h4>
-                  <p class="text-[11px] text-indigo-700">Sponsoring Club, Invitation, RH & Recrutement, Remerciements...</p>
+                  <h4 class="text-xs font-bold text-indigo-950">Modèles d'emails & Bibliothèque</h4>
+                  <p class="text-[11px] text-indigo-700">Modèles prêts à l'emploi ou créez et réutilisez vos propres modèles.</p>
                 </div>
               </div>
-              <button 
-                type="button" 
-                onclick="openTemplatesModal()" 
-                class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition flex items-center space-x-1.5 flex-shrink-0">
-                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
-                <span>Choisir un modèle</span>
-              </button>
+              <div class="flex items-center space-x-1.5 flex-shrink-0">
+                <button 
+                  type="button" 
+                  onclick="saveCurrentDraftAsTemplate()" 
+                  class="px-2.5 py-1.5 rounded-lg bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 text-xs font-bold shadow-2xs transition flex items-center space-x-1 cursor-pointer"
+                  title="Sauvegarder l'email actuel comme nouveau modèle">
+                  <span>💾 Sauvegarder</span>
+                </button>
+                <button 
+                  type="button" 
+                  onclick="openTemplatesModal()" 
+                  class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition flex items-center space-x-1.5 cursor-pointer">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+                  <span>Bibliothèque</span>
+                </button>
+              </div>
             </div>
 
             <!-- DETECTED EXCEL VARIABLES BAR -->
@@ -926,20 +935,48 @@
     </div>
   </div>
 
-  <!-- MODAL: CHOIX DE MODÈLES D'EMAILS PRO -->
+  <!-- MODAL: CHOIX DE MODÈLES D'EMAILS PRO ET PERSONNALISÉS -->
   <div id="modal-templates" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-8 space-y-4">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <div>
           <h3 class="font-bold text-slate-900 text-base sm:text-lg flex items-center space-x-2">
-            <span>✨ Bibliothèque de Modèles Prêts à l'emploi</span>
+            <span>✨ Bibliothèque de Modèles d'Emails</span>
           </h3>
-          <p class="text-xs text-slate-500 mt-0.5">Cliquez sur un modèle pour l'insérer instantanément dans votre éditeur.</p>
+          <p class="text-xs text-slate-500 mt-0.5">Sélectionnez un modèle pro ou créez et gérez vos propres modèles personnalisés.</p>
         </div>
-        <button onclick="closeTemplatesModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1 leading-none">&times;</button>
+        <div class="flex items-center space-x-2">
+          <button 
+            type="button" 
+            onclick="openCreateTemplateModal()" 
+            class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition flex items-center space-x-1 cursor-pointer">
+            <span>+ Nouveau modèle</span>
+          </button>
+          <button onclick="closeTemplatesModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1 leading-none cursor-pointer">&times;</button>
+        </div>
       </div>
 
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto custom-scroll pr-1">
+      <!-- Tabs Navigation (Custom vs Built-in) -->
+      <div class="flex border-b border-slate-200">
+        <button 
+          type="button" 
+          id="btn-tpl-tab-builtins" 
+          onclick="switchTemplatesTab('builtins')" 
+          class="px-4 py-2 text-xs font-bold border-b-2 border-indigo-600 text-indigo-700 flex items-center space-x-1.5 transition">
+          <span>✨ Modèles Prêts à l'emploi (Pro)</span>
+        </button>
+        <button 
+          type="button" 
+          id="btn-tpl-tab-custom" 
+          onclick="switchTemplatesTab('custom')" 
+          class="px-4 py-2 text-xs font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 flex items-center space-x-1.5 transition">
+          <span>🌟 Mes Modèles Personnalisés</span>
+          <span id="custom-tpl-count-badge" class="px-1.5 py-0.2 rounded-full text-[10px] bg-slate-100 text-slate-700 font-bold">0</span>
+        </button>
+      </div>
+
+      <!-- Tab Content 1: Built-in Templates -->
+      <div id="pane-tpl-builtins" class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[55vh] overflow-y-auto custom-scroll pr-1">
         
         <!-- Template 1: Sponsoring -->
         <div onclick="applyTemplate('sponsoring')" class="p-3.5 rounded-xl border border-slate-200 hover:border-indigo-500 hover:shadow-md cursor-pointer transition bg-slate-50/50 hover:bg-white space-y-2 group">
@@ -1008,8 +1045,106 @@
 
       </div>
 
-      <div class="pt-3 border-t border-slate-100 text-right">
-        <button onclick="closeTemplatesModal()" class="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition">Fermer</button>
+      <!-- Tab Content 2: Custom User Templates -->
+      <div id="pane-tpl-custom" class="hidden space-y-3 max-h-[55vh] overflow-y-auto custom-scroll pr-1">
+        <div id="custom-templates-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- Dynamically filled by JS -->
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+        <button 
+          type="button" 
+          onclick="saveCurrentDraftAsTemplate()" 
+          class="text-xs font-bold text-indigo-700 hover:text-indigo-900 flex items-center space-x-1 cursor-pointer">
+          <span>💾 Sauvegarder le message actuel comme modèle</span>
+        </button>
+        <button onclick="closeTemplatesModal()" class="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition cursor-pointer">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CRÉER / MODIFIER UN MODÈLE PERSONNALISÉ -->
+  <div id="modal-create-template" class="hidden fixed inset-0 z-55 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-8 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <h3 class="font-bold text-slate-900 text-base sm:text-lg flex items-center space-x-2">
+            <span>✍️ Enregistrer un Modèle d'Email</span>
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">Donnez un nom et configurez le contenu par défaut de votre modèle.</p>
+        </div>
+        <button onclick="closeCreateTemplateModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1 leading-none cursor-pointer">&times;</button>
+      </div>
+
+      <div class="space-y-3">
+        <input type="hidden" id="tpl-edit-id" value="">
+        <div>
+          <label for="tpl-input-name" class="block text-xs font-semibold text-slate-700 mb-1">Nom du modèle * :</label>
+          <input 
+            type="text" 
+            id="tpl-input-name" 
+            placeholder="Ex: Relance Partenariat EPIK 2026" 
+            class="w-full text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label for="tpl-input-category" class="block text-xs font-semibold text-slate-700 mb-1">Catégorie :</label>
+            <input 
+              type="text" 
+              id="tpl-input-category" 
+              placeholder="Ex: Club, Sponsors, RH" 
+              class="w-full text-xs font-medium px-3 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none">
+          </div>
+          <div>
+            <label for="tpl-input-icon" class="block text-xs font-semibold text-slate-700 mb-1">Icône (Emoji) :</label>
+            <select id="tpl-input-icon" class="w-full text-xs font-medium px-3 py-2 rounded-xl border border-slate-200 bg-white focus:border-indigo-500 outline-none cursor-pointer">
+              <option value="✨">✨ Étoile</option>
+              <option value="🤝">🤝 Partenariat</option>
+              <option value="📢">📢 Annonce</option>
+              <option value="🎓">🎓 Événement / ISIMS</option>
+              <option value="💼">💼 RH / Recrutement</option>
+              <option value="📜">📜 Remerciements</option>
+              <option value="✉️">✉️ Message standard</option>
+              <option value="🚀">🚀 Lancement</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label for="tpl-input-subject" class="block text-xs font-semibold text-slate-700 mb-1">Objet / Sujet de l'email :</label>
+          <input 
+            type="text" 
+            id="tpl-input-subject" 
+            placeholder="Ex: Suivi de notre entretien pour {Poste}" 
+            class="w-full text-xs font-medium px-3 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none">
+        </div>
+
+        <div>
+          <label for="tpl-input-body" class="block text-xs font-semibold text-slate-700 mb-1">Corps du message (Texte ou HTML) :</label>
+          <textarea 
+            id="tpl-input-body" 
+            rows="7" 
+            placeholder="Bonjour {Prénom},&#10;&#10;Nous vous recontactons..." 
+            class="w-full text-xs font-sans p-3 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none custom-scroll resize-y"></textarea>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+        <button 
+          type="button" 
+          onclick="closeCreateTemplateModal()" 
+          class="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition cursor-pointer">
+          Annuler
+        </button>
+        <button 
+          type="button" 
+          id="btn-submit-template" 
+          onclick="submitTemplateForm()" 
+          class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition cursor-pointer">
+          Enregistrer le modèle
+        </button>
       </div>
     </div>
   </div>
@@ -1161,6 +1296,7 @@
     let lastFocusedInput = 'body';
     let savedContactLists = [];
     let scheduledTasksList = [];
+    let savedCustomTemplates = [];
     let currentScheduleMode = 'now'; // 'now' or 'later'
 
     // Initialisation
@@ -1168,6 +1304,7 @@
       fetchConfig();
       fetchContactLists();
       fetchScheduledTasks();
+      fetchCustomTemplates();
       // Synchronisation du champ delay
       const slider = document.getElementById("delay-slider");
       document.getElementById("delay-display").textContent = parseFloat(slider.value).toFixed(1) + " sec";
@@ -2257,12 +2394,121 @@
       }
     };
 
+    async function fetchCustomTemplates() {
+      try {
+        const res = await fetch("/api/templates");
+        const data = await res.json();
+        savedCustomTemplates = data.templates || [];
+        const badge = document.getElementById("custom-tpl-count-badge");
+        if (badge) badge.textContent = savedCustomTemplates.length;
+        renderCustomTemplates();
+      } catch (e) {
+        console.error("Erreur chargement modèles:", e);
+      }
+    }
+
     function openTemplatesModal() {
+      renderCustomTemplates();
       document.getElementById("modal-templates").classList.remove("hidden");
     }
 
     function closeTemplatesModal() {
       document.getElementById("modal-templates").classList.add("hidden");
+    }
+
+    function switchTemplatesTab(tab) {
+      const btnBuiltins = document.getElementById("btn-tpl-tab-builtins");
+      const btnCustom = document.getElementById("btn-tpl-tab-custom");
+      const paneBuiltins = document.getElementById("pane-tpl-builtins");
+      const paneCustom = document.getElementById("pane-tpl-custom");
+
+      if (tab === 'builtins') {
+        btnBuiltins.className = "px-4 py-2 text-xs font-bold border-b-2 border-indigo-600 text-indigo-700 flex items-center space-x-1.5 transition";
+        btnCustom.className = "px-4 py-2 text-xs font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 flex items-center space-x-1.5 transition";
+        paneBuiltins.classList.remove("hidden");
+        paneCustom.classList.add("hidden");
+      } else {
+        btnCustom.className = "px-4 py-2 text-xs font-bold border-b-2 border-indigo-600 text-indigo-700 flex items-center space-x-1.5 transition";
+        btnBuiltins.className = "px-4 py-2 text-xs font-medium border-b-2 border-transparent text-slate-600 hover:text-slate-900 flex items-center space-x-1.5 transition";
+        paneCustom.classList.remove("hidden");
+        paneBuiltins.classList.add("hidden");
+        renderCustomTemplates();
+      }
+    }
+
+    function renderCustomTemplates() {
+      const container = document.getElementById("custom-templates-list");
+      const badge = document.getElementById("custom-tpl-count-badge");
+      if (badge) badge.textContent = savedCustomTemplates.length;
+      if (!container) return;
+
+      if (savedCustomTemplates.length === 0) {
+        container.parentElement.innerHTML = `
+          <div id="custom-templates-list" class="p-8 text-center text-slate-400 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+            <span class="text-3xl block">🌟</span>
+            <h4 class="font-bold text-slate-800 text-sm">Aucun modèle personnalisé pour le moment</h4>
+            <p class="text-xs text-slate-500 max-w-sm mx-auto">
+              Créez votre propre modèle réutilisable en quelques secondes ou enregistrez le message que vous êtes en train d'écrire.
+            </p>
+            <div class="flex items-center justify-center space-x-2 pt-1">
+              <button 
+                type="button" 
+                onclick="openCreateTemplateModal()" 
+                class="px-3.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition cursor-pointer">
+                + Créer mon premier modèle
+              </button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      container.parentElement.innerHTML = `
+        <div id="custom-templates-list" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          ${savedCustomTemplates.map(t => {
+            const cleanText = t.body ? t.body.replace(/<[^>]+>/g, ' ').slice(0, 110) : "(Corps vide)";
+            return `
+              <div class="p-3.5 rounded-xl border border-slate-200 hover:border-indigo-500 hover:shadow-md transition bg-white space-y-2 group flex flex-col justify-between">
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                      <span class="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center text-sm font-bold flex-shrink-0">${t.icon || "✨"}</span>
+                      <div>
+                        <h4 class="font-bold text-xs sm:text-sm text-slate-800 group-hover:text-indigo-600 transition truncate max-w-[140px]">${t.name}</h4>
+                        <span class="text-[10px] text-indigo-600 font-semibold">${t.category || "Personnalisé"}</span>
+                      </div>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                      <button 
+                        type="button" 
+                        onclick="editCustomTemplate('${t.id}')" 
+                        class="p-1 text-slate-400 hover:text-indigo-600 transition cursor-pointer" 
+                        title="Modifier ce modèle">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L6.832 19.82a4.5 4.5 0 01-1.897 1.13l-2.685.8.8-2.685a4.5 4.5 0 011.13-1.897L16.863 4.487zm0 0L19.5 7.125"/></svg>
+                      </button>
+                      <button 
+                        type="button" 
+                        onclick="deleteCustomTemplate('${t.id}')" 
+                        class="p-1 text-slate-400 hover:text-rose-600 transition cursor-pointer" 
+                        title="Supprimer ce modèle">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                  <p class="text-[11px] font-semibold text-slate-700 truncate"><b>Objet :</b> ${t.subject || "(Sans objet)"}</p>
+                  <p class="text-[11px] text-slate-500 line-clamp-2">${cleanText}</p>
+                </div>
+                <button 
+                  type="button" 
+                  onclick="applyCustomTemplate('${t.id}')" 
+                  class="w-full mt-2 py-1.5 rounded-lg bg-indigo-50 text-indigo-700 text-xs font-bold group-hover:bg-indigo-600 group-hover:text-white transition cursor-pointer">
+                  Utiliser ce modèle
+                </button>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
     }
 
     function applyTemplate(key) {
@@ -2273,6 +2519,125 @@
       closeTemplatesModal();
       setBodyView('editor');
       alert(`✅ Modèle « ${tpl.name} » inséré avec succès dans votre message !`);
+    }
+
+    function applyCustomTemplate(id) {
+      const t = savedCustomTemplates.find(x => String(x.id) === String(id));
+      if (!t) return;
+      if (t.subject) document.getElementById("subject-input").value = t.subject;
+      if (t.body) document.getElementById("body-input").value = t.body;
+      closeTemplatesModal();
+      setBodyView('editor');
+      alert(`✅ Modèle personnalisé « ${t.name} » inséré avec succès dans votre message !`);
+    }
+
+    function openCreateTemplateModal() {
+      document.getElementById("tpl-edit-id").value = "";
+      document.getElementById("tpl-input-name").value = "";
+      document.getElementById("tpl-input-category").value = "Général";
+      document.getElementById("tpl-input-icon").value = "✨";
+      document.getElementById("tpl-input-subject").value = "";
+      document.getElementById("tpl-input-body").value = "";
+      document.getElementById("btn-submit-template").textContent = "Enregistrer le modèle";
+      document.getElementById("modal-create-template").classList.remove("hidden");
+    }
+
+    function closeCreateTemplateModal() {
+      document.getElementById("modal-create-template").classList.add("hidden");
+    }
+
+    function saveCurrentDraftAsTemplate() {
+      const subj = document.getElementById("subject-input").value.trim();
+      const bdy = document.getElementById("body-input").value.trim();
+
+      if (!subj && !bdy) {
+        alert("⚠️ Votre éditeur est vide. Veuillez rédiger un objet ou un contenu avant de l'enregistrer comme modèle.");
+        return;
+      }
+
+      openCreateTemplateModal();
+      document.getElementById("tpl-input-subject").value = subj;
+      document.getElementById("tpl-input-body").value = bdy;
+      document.getElementById("tpl-input-name").value = subj ? `Modèle : ${subj.slice(0, 30)}` : "Mon nouveau modèle";
+    }
+
+    function editCustomTemplate(id) {
+      const t = savedCustomTemplates.find(x => String(x.id) === String(id));
+      if (!t) return;
+
+      document.getElementById("tpl-edit-id").value = t.id;
+      document.getElementById("tpl-input-name").value = t.name || "";
+      document.getElementById("tpl-input-category").value = t.category || "Général";
+      document.getElementById("tpl-input-icon").value = t.icon || "✨";
+      document.getElementById("tpl-input-subject").value = t.subject || "";
+      document.getElementById("tpl-input-body").value = t.body || "";
+      document.getElementById("btn-submit-template").textContent = "Mettre à jour le modèle";
+      document.getElementById("modal-create-template").classList.remove("hidden");
+    }
+
+    async function submitTemplateForm() {
+      const id = document.getElementById("tpl-edit-id").value.trim();
+      const name = document.getElementById("tpl-input-name").value.trim();
+      const category = document.getElementById("tpl-input-category").value.trim() || "Général";
+      const icon = document.getElementById("tpl-input-icon").value;
+      const subject = document.getElementById("tpl-input-subject").value.trim();
+      const body = document.getElementById("tpl-input-body").value.trim();
+
+      if (!name) {
+        alert("⚠️ Veuillez donner un nom à votre modèle.");
+        document.getElementById("tpl-input-name").focus();
+        return;
+      }
+
+      if (!subject && !body) {
+        alert("⚠️ Le modèle doit contenir au moins un objet ou un contenu.");
+        document.getElementById("tpl-input-body").focus();
+        return;
+      }
+
+      const payload = {
+        name: name,
+        category: category,
+        icon: icon,
+        subject: subject,
+        body: body
+      };
+      if (id) payload.id = id;
+
+      try {
+        const res = await fetch("/api/templates/save", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert("✅ " + data.message);
+          closeCreateTemplateModal();
+          await fetchCustomTemplates();
+          openTemplatesModal();
+          switchTemplatesTab('custom');
+        } else {
+          alert("Erreur: " + data.message);
+        }
+      } catch (e) {
+        alert("Impossible d'enregistrer le modèle.");
+      }
+    }
+
+    async function deleteCustomTemplate(id) {
+      if (!confirm("Voulez-vous vraiment supprimer ce modèle personnalisé ?")) return;
+      try {
+        const res = await fetch("/api/templates/delete", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({id: id})
+        });
+        const data = await res.json();
+        await fetchCustomTemplates();
+      } catch (e) {
+        alert("Erreur lors de la suppression.");
+      }
     }
 
     // ===============================================================

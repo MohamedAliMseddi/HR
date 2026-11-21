@@ -30,6 +30,7 @@ CONFIG_FILE = os.path.join(os.path.dirname(__file__), "config.json")
 LOGS_FILE = os.path.join(os.path.dirname(__file__), "history.json")
 LISTS_FILE = os.path.join(os.path.dirname(__file__), "contact_lists.json")
 SCHEDULED_FILE = os.path.join(os.path.dirname(__file__), "scheduled_tasks.json")
+TEMPLATES_FILE = os.path.join(os.path.dirname(__file__), "custom_templates.json")
 
 # État global de l'envoi en cours
 campaign_state = {
@@ -121,6 +122,22 @@ def save_scheduled_tasks(tasks):
             json.dump(tasks, f, indent=2, ensure_ascii=False)
     except Exception as e:
         print(f"Erreur sauvegarde tâches programmées: {e}")
+
+def load_custom_templates():
+    if os.path.exists(TEMPLATES_FILE):
+        try:
+            with open(TEMPLATES_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+def save_custom_templates(templates):
+    try:
+        with open(TEMPLATES_FILE, "w", encoding="utf-8") as f:
+            json.dump(templates, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"Erreur sauvegarde modèles personnalisés: {e}")
 
 def evaluate_spam_score(subject, content_html):
     subject = (subject or "").strip()
@@ -823,6 +840,11 @@ class MailServerHandler(BaseHTTPRequestHandler):
             self.send_json({"success": True, "tasks": tasks})
             return
 
+        elif path == "/api/templates":
+            templates = load_custom_templates()
+            self.send_json({"success": True, "templates": templates})
+            return
+
         self.send_error(404, "Page non trouvée")
 
     def do_POST(self):
@@ -1178,6 +1200,57 @@ class MailServerHandler(BaseHTTPRequestHandler):
             tasks = [t for t in tasks if str(t.get("id")) != task_id]
             save_scheduled_tasks(tasks)
             self.send_json({"success": True, "message": "Tâche supprimée."})
+            return
+
+        elif path == "/api/templates/save":
+            name = (data.get("name") or "").strip()
+            subject = (data.get("subject") or "").strip()
+            body = (data.get("body") or "").strip()
+            category = (data.get("category") or "Personnalisé").strip()
+            icon = (data.get("icon") or "✨").strip()
+            tpl_id = data.get("id") or str(uuid.uuid4())[:8]
+
+            if not name:
+                self.send_json({"success": False, "message": "Veuillez donner un nom au modèle."})
+                return
+            if not body and not subject:
+                self.send_json({"success": False, "message": "Le modèle doit comporter un sujet ou un contenu."})
+                return
+
+            templates = load_custom_templates()
+            existing = next((t for t in templates if str(t.get("id")) == str(tpl_id)), None)
+
+            tpl_entry = {
+                "id": tpl_id,
+                "name": name,
+                "subject": subject,
+                "body": body,
+                "category": category,
+                "icon": icon,
+                "updated_at": time.strftime("%d/%m/%Y à %H:%M")
+            }
+
+            if existing:
+                tpl_entry["created_at"] = existing.get("created_at", time.strftime("%d/%m/%Y à %H:%M"))
+                templates = [tpl_entry if str(t.get("id")) == str(tpl_id) else t for t in templates]
+            else:
+                tpl_entry["created_at"] = time.strftime("%d/%m/%Y à %H:%M")
+                templates.insert(0, tpl_entry)
+
+            save_custom_templates(templates)
+            self.send_json({
+                "success": True, 
+                "message": f"Modèle « {name} » enregistré avec succès !", 
+                "template": tpl_entry
+            })
+            return
+
+        elif path == "/api/templates/delete":
+            tpl_id = str(data.get("id", ""))
+            templates = load_custom_templates()
+            templates = [t for t in templates if str(t.get("id")) != tpl_id]
+            save_custom_templates(templates)
+            self.send_json({"success": True, "message": "Modèle supprimé avec succès."})
             return
 
         self.send_error(404, "Endpoint non trouvé")
