@@ -14,6 +14,8 @@ import threading
 import webbrowser
 import base64
 import uuid
+import urllib.request
+import urllib.error
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.base import MIMEBase
@@ -49,8 +51,11 @@ def load_config():
         except Exception:
             return {}
     return {
+        "provider": "brevo",
+        "sender_email": "",
         "gmail_address": "",
         "app_password": "",
+        "brevo_api_key": "",
         "sender_name": "",
         "default_delay": 2
     }
@@ -60,6 +65,96 @@ def save_config(data):
     current.update(data)
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(current, f, indent=2, ensure_ascii=False)
+
+def verify_brevo_credentials(api_key):
+    """
+    Vérifie la clé API Brevo via HTTPS (Port 443 - Ouvert partout dans le Cloud)
+    """
+    clean_key = api_key.strip()
+    req = urllib.request.Request(
+        "https://api.brevo.com/v3/account",
+        headers={
+            "accept": "application/json",
+            "api-key": clean_key,
+            "User-Agent": "MailStorm/1.0"
+        },
+        method="GET"
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            email = data.get("email", "")
+            return True, f"Connexion réussie à Brevo ({email}) ! Port 443 HTTPS validé."
+    except urllib.error.HTTPError as e:
+        try:
+            err_body = json.loads(e.read().decode("utf-8"))
+            msg = err_body.get("message", str(e))
+        except Exception:
+            msg = str(e)
+        return False, f"Erreur Brevo ({e.code}) : {msg}"
+    except Exception as e:
+        return False, f"Erreur de connexion Brevo : {str(e)}"
+
+def send_single_email_brevo(api_key, sender_email, sender_name, recipient, subject, content_html, attachments=None):
+    """
+    Envoie un email via l'API REST de Brevo (HTTPS Port 443)
+    """
+    clean_key = api_key.strip()
+    
+    personalized_subject = subject.replace("{email}", recipient)
+    personalized_content = content_html.replace("{email}", recipient)
+    personalized_content = personalized_content.replace("{date}", time.strftime("%d/%m/%Y"))
+
+    payload = {
+        "sender": {
+            "name": sender_name or sender_email,
+            "email": sender_email
+        },
+        "to": [
+            {"email": recipient}
+        ],
+        "subject": personalized_subject,
+        "htmlContent": personalized_content
+    }
+
+    if attachments:
+        att_list = []
+        for att in attachments:
+            name = att.get("name", "attachment")
+            b64_data = att.get("data", "")
+            if b64_data:
+                clean_b64 = b64_data.split(",")[-1]
+                att_list.append({
+                    "name": name,
+                    "content": clean_b64
+                })
+        if att_list:
+            payload["attachment"] = att_list
+
+    req_data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        "https://api.brevo.com/v3/smtp/email",
+        data=req_data,
+        headers={
+            "accept": "application/json",
+            "content-type": "application/json",
+            "api-key": clean_key,
+            "User-Agent": "MailStorm/1.0"
+        },
+        method="POST"
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            if resp.status not in (200, 201, 202):
+                raise Exception(f"Brevo API error: Code {resp.status}")
+    except urllib.error.HTTPError as e:
+        try:
+            err_body = json.loads(e.read().decode("utf-8"))
+            err_msg = err_body.get("message", str(e))
+        except Exception:
+            err_msg = str(e)
+        raise Exception(f"Brevo: {err_msg}")
 
 def verify_gmail_credentials(email_address, app_password):
     """
@@ -140,7 +235,7 @@ def send_single_email(sender_email, app_password, sender_name, recipient, subjec
         server.login(sender_email, clean_password)
         server.send_message(msg)
 
-def worker_campaign(recipients, subject, content_html, sender_email, app_password, sender_name, delay_seconds, attachments):
+def worker_campaign(recipients, subject, content_html, provider, sender_email, sender_name, app_password, brevo_api_key, delay_seconds, attachments):
     global campaign_state
     
     with state_lock:
@@ -170,15 +265,26 @@ def worker_campaign(recipients, subject, content_html, sender_email, app_passwor
         success = False
         error_msg = ""
         try:
-            send_single_email(
-                sender_email=sender_email,
-                app_password=app_password,
-                sender_name=sender_name,
-                recipient=recipient,
-                subject=subject,
-                content_html=content_html,
-                attachments=attachments
-            )
+            if provider == "brevo":
+                send_single_email_brevo(
+                    api_key=brevo_api_key,
+                    sender_email=sender_email,
+                    sender_name=sender_name,
+                    recipient=recipient,
+                    subject=subject,
+                    content_html=content_html,
+                    attachments=attachments
+                )
+            else:
+                send_single_email(
+                    sender_email=sender_email,
+                    app_password=app_password,
+                    sender_name=sender_name,
+                    recipient=recipient,
+                    subject=subject,
+                    content_html=content_html,
+                    attachments=attachments
+                )
             success = True
         except Exception as e:
             error_msg = str(e)
@@ -252,10 +358,12 @@ class MailServerHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/config":
             cfg = load_config()
-            # Mask the password for security
             safe_cfg = {
+                "provider": cfg.get("provider", "brevo"),
+                "sender_email": cfg.get("sender_email") or cfg.get("gmail_address", ""),
                 "gmail_address": cfg.get("gmail_address", ""),
                 "has_password": bool(cfg.get("app_password")),
+                "has_brevo_key": bool(cfg.get("brevo_api_key")),
                 "sender_name": cfg.get("sender_name", ""),
                 "default_delay": cfg.get("default_delay", 2)
             }
@@ -308,45 +416,71 @@ class MailServerHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/test-connection":
             cfg = load_config()
-            gmail = data.get("gmail_address") or cfg.get("gmail_address", "")
-            pwd = data.get("app_password") or cfg.get("app_password", "")
+            provider = data.get("provider") or cfg.get("provider", "brevo")
             
-            if not gmail or not pwd:
-                self.send_json({"success": False, "message": "Veuillez renseigner votre email Gmail et votre mot de passe d'application."})
+            if provider == "brevo":
+                key = data.get("brevo_api_key") or cfg.get("brevo_api_key", "")
+                if not key:
+                    self.send_json({"success": False, "message": "Veuillez renseigner votre clé API Brevo."})
+                    return
+                ok, msg = verify_brevo_credentials(key)
+                self.send_json({"success": ok, "message": msg})
                 return
-
-            ok, msg = verify_gmail_credentials(gmail, pwd)
-            self.send_json({"success": ok, "message": msg})
-            return
+            else:
+                gmail = data.get("gmail_address") or cfg.get("gmail_address", "")
+                pwd = data.get("app_password") or cfg.get("app_password", "")
+                if not gmail or not pwd:
+                    self.send_json({"success": False, "message": "Veuillez renseigner votre email Gmail et votre mot de passe d'application."})
+                    return
+                ok, msg = verify_gmail_credentials(gmail, pwd)
+                self.send_json({"success": ok, "message": msg})
+                return
 
         elif path == "/api/test-send":
             cfg = load_config()
-            gmail = data.get("gmail_address") or cfg.get("gmail_address", "")
-            pwd = data.get("app_password") or cfg.get("app_password", "")
+            provider = data.get("provider") or cfg.get("provider", "brevo")
+            sender_email = data.get("sender_email") or data.get("gmail_address") or cfg.get("sender_email") or cfg.get("gmail_address", "")
             sender_name = data.get("sender_name") or cfg.get("sender_name", "")
             target = data.get("test_email", "")
             subject = data.get("subject", "Test MailStorm")
             content = data.get("content", "<p>Ceci est un email de test envoyé par <b>MailStorm</b>.</p>")
-            anti_thread = bool(data.get("anti_thread", False))
-
-            if not gmail or not pwd:
-                self.send_json({"success": False, "message": "Identifiants Gmail manquants."})
-                return
 
             if not target or "@" not in target:
                 self.send_json({"success": False, "message": "Adresse email de test invalide."})
                 return
 
             try:
-                send_single_email(
-                    sender_email=gmail,
-                    app_password=pwd,
-                    sender_name=sender_name,
-                    recipient=target,
-                    subject=f"[TEST] {subject}",
-                    content_html=content,
-                    attachments=[]
-                )
+                if provider == "brevo":
+                    key = data.get("brevo_api_key") or cfg.get("brevo_api_key", "")
+                    if not key:
+                        self.send_json({"success": False, "message": "Clé API Brevo manquante."})
+                        return
+                    if not sender_email:
+                        self.send_json({"success": False, "message": "Adresse email de l'expéditeur manquante."})
+                        return
+                    send_single_email_brevo(
+                        api_key=key,
+                        sender_email=sender_email,
+                        sender_name=sender_name,
+                        recipient=target,
+                        subject=f"[TEST] {subject}",
+                        content_html=content,
+                        attachments=[]
+                    )
+                else:
+                    pwd = data.get("app_password") or cfg.get("app_password", "")
+                    if not sender_email or not pwd:
+                        self.send_json({"success": False, "message": "Identifiants Gmail manquants."})
+                        return
+                    send_single_email(
+                        sender_email=sender_email,
+                        app_password=pwd,
+                        sender_name=sender_name,
+                        recipient=target,
+                        subject=f"[TEST] {subject}",
+                        content_html=content,
+                        attachments=[]
+                    )
                 self.send_json({"success": True, "message": f"Email de test envoyé avec succès à {target} !"})
             except Exception as e:
                 self.send_json({"success": False, "message": f"Erreur lors du test : {str(e)}"})
@@ -359,9 +493,11 @@ class MailServerHandler(BaseHTTPRequestHandler):
                     return
 
             cfg = load_config()
-            gmail = data.get("gmail_address") or cfg.get("gmail_address", "")
-            pwd = data.get("app_password") or cfg.get("app_password", "")
+            provider = data.get("provider") or cfg.get("provider", "brevo")
+            sender_email = data.get("sender_email") or data.get("gmail_address") or cfg.get("sender_email") or cfg.get("gmail_address", "")
             sender_name = data.get("sender_name") or cfg.get("sender_name", "")
+            pwd = data.get("app_password") or cfg.get("app_password", "")
+            brevo_key = data.get("brevo_api_key") or cfg.get("brevo_api_key", "")
             
             recipients = data.get("recipients", [])
             subject = data.get("subject", "")
@@ -369,7 +505,11 @@ class MailServerHandler(BaseHTTPRequestHandler):
             delay = float(data.get("delay", 2))
             attachments = data.get("attachments", [])
 
-            if not gmail or not pwd:
+            if provider == "brevo" and (not brevo_key or not sender_email):
+                self.send_json({"success": False, "message": "Veuillez configurer votre clé API Brevo et votre adresse email d'expéditeur."})
+                return
+
+            if provider == "gmail" and (not sender_email or not pwd):
                 self.send_json({"success": False, "message": "Veuillez configurer votre compte Gmail avant de lancer l'envoi."})
                 return
 
@@ -388,9 +528,11 @@ class MailServerHandler(BaseHTTPRequestHandler):
                     "recipients": recipients,
                     "subject": subject,
                     "content_html": content,
-                    "sender_email": gmail,
-                    "app_password": pwd,
+                    "provider": provider,
+                    "sender_email": sender_email,
                     "sender_name": sender_name,
+                    "app_password": pwd,
+                    "brevo_api_key": brevo_key,
                     "delay_seconds": delay,
                     "attachments": attachments
                 },
@@ -398,7 +540,7 @@ class MailServerHandler(BaseHTTPRequestHandler):
             )
             thread.start()
 
-            self.send_json({"success": True, "message": f"Campagne lancée pour {len(recipients)} destinataires !"})
+            self.send_json({"success": True, "message": f"Campagne lancée pour {len(recipients)} destinataires via {provider.upper()} !"})
             return
 
         elif path == "/api/stop-campaign":

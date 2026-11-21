@@ -355,14 +355,38 @@
     </div>
 
     <!-- ============================================================= -->
-    <!-- TAB 2: GMAIL SETTINGS                                         -->
+    <!-- TAB 2: SETTINGS (BREVO API & GMAIL SMTP)                      -->
     <!-- ============================================================= -->
     <div id="pane-settings" class="hidden max-w-2xl mx-auto space-y-6">
-      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 space-y-5 sm:space-y-6">
         
         <div class="border-b border-slate-100 pb-4">
-          <h2 class="text-lg font-bold text-slate-900">Configuration du compte Gmail</h2>
-          <p class="text-xs text-slate-500 mt-0.5">Configurez l'adresse d'envoi et votre mot de passe d'application Google sécurisé.</p>
+          <h2 class="text-lg font-bold text-slate-900">Paramètres de l'Expéditeur</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Choisissez votre méthode d'envoi et configurez vos identifiants.</p>
+        </div>
+
+        <!-- Provider Selector -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Méthode d'envoi</label>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1 bg-slate-100 rounded-xl">
+            <button 
+              type="button" 
+              onclick="setProvider('brevo')" 
+              id="btn-provider-brevo" 
+              class="py-2.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-2 bg-white text-indigo-700 shadow-sm border border-slate-200">
+              <span>🟢 Brevo API (Recommandé Render)</span>
+            </button>
+            <button 
+              type="button" 
+              onclick="setProvider('gmail')" 
+              id="btn-provider-gmail" 
+              class="py-2.5 px-3 rounded-lg text-xs font-semibold transition flex items-center justify-center space-x-2 text-slate-600 hover:text-slate-900">
+              <span>🔵 Gmail (SMTP Local sur PC)</span>
+            </button>
+          </div>
+          <p id="provider-hint" class="text-[11px] text-emerald-700 font-medium mt-2 flex items-center space-x-1">
+            <span>✅ <b>300 emails/jour gratuits :</b> utilise le port 443 (HTTPS), 100% garanti sur Render sans blocage de port.</span>
+          </p>
         </div>
 
         <div class="space-y-4">
@@ -374,25 +398,53 @@
             <input 
               type="text" 
               id="cfg-sender-name" 
-              placeholder="Ex: Mohamed Salah / Mon Entreprise"
-              class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition">
+              placeholder="Ex: EPIK ISIMS / Mon Entreprise"
+              class="w-full text-base sm:text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition">
           </div>
 
-          <!-- Adresse Gmail -->
+          <!-- Email de l'expéditeur -->
           <div>
-            <label for="cfg-gmail" class="block text-xs font-semibold text-slate-700 mb-1">
-              Adresse Gmail
+            <label for="cfg-sender-email" class="block text-xs font-semibold text-slate-700 mb-1">
+              Adresse email de l'expéditeur
             </label>
             <input 
               type="email" 
-              id="cfg-gmail" 
-              placeholder="votre.adresse@gmail.com"
-              class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition">
+              id="cfg-sender-email" 
+              placeholder="epikleadersisims@gmail.com"
+              class="w-full text-base sm:text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition">
           </div>
 
-          <!-- Mot de passe d'application -->
-          <div>
-            <div class="flex items-center justify-between mb-1">
+          <!-- GROUP BREVO API -->
+          <div id="group-brevo" class="space-y-2">
+            <div class="flex items-center justify-between">
+              <label for="cfg-brevo-key" class="text-xs font-semibold text-slate-700">
+                Clé API Brevo (v3)
+              </label>
+              <a href="https://app.brevo.com/settings/keys/api" target="_blank" class="text-xs text-indigo-600 hover:text-indigo-800 font-bold underline">
+                Obtenir ma clé en 1 clic 👉
+              </a>
+            </div>
+            <div class="relative">
+              <input 
+                type="password" 
+                id="cfg-brevo-key" 
+                placeholder="xkeysib-..."
+                class="w-full text-base sm:text-sm font-mono tracking-wider px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition pr-10">
+              <button 
+                type="button" 
+                onclick="toggleBrevoKeyVisibility()" 
+                class="absolute right-3 top-3 text-slate-400 hover:text-slate-600">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              </button>
+            </div>
+            <p class="text-[11px] text-slate-500">
+              💡 Brevo offre 300 emails gratuits chaque jour. L'envoi passe par l'API REST HTTPS (Port 443), qui n'est jamais bloquée sur Render.
+            </p>
+          </div>
+
+          <!-- GROUP GMAIL SMTP -->
+          <div id="group-gmail" class="hidden space-y-2">
+            <div class="flex items-center justify-between">
               <label for="cfg-password" class="text-xs font-semibold text-slate-700">
                 Mot de passe d'application Google (16 lettres)
               </label>
@@ -405,16 +457,16 @@
                 type="password" 
                 id="cfg-password" 
                 placeholder="abcd efgh ijkl mnop"
-                class="w-full text-sm font-mono tracking-wider px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition pr-10">
+                class="w-full text-base sm:text-sm font-mono tracking-wider px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition pr-10">
               <button 
                 type="button" 
                 onclick="togglePasswordVisibility()" 
-                class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600">
+                class="absolute right-3 top-3 text-slate-400 hover:text-slate-600">
                 <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
               </button>
             </div>
-            <p class="text-[11px] text-slate-500 mt-1">
-              ⚠️ Ce n'est PAS votre mot de passe habituel de Gmail. C'est un code de 16 lettres généré par Google pour autoriser l'envoi sécurisé.
+            <p class="text-[11px] text-amber-700 bg-amber-50 p-2 rounded-lg border border-amber-200">
+              ⚠️ <b>Remarque Render :</b> Le plan gratuit de Render bloque le port SMTP 587 de Gmail. Si votre app est hébergée sur Render, utilisez plutôt <b>Brevo API</b> ci-dessus.
             </p>
           </div>
         </div>
@@ -426,7 +478,7 @@
         <div class="pt-4 border-t border-slate-100 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <button 
             type="button" 
-            onclick="testGmailConnection()" 
+            onclick="testConnection()" 
             id="btn-test-conn"
             class="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-semibold transition flex items-center justify-center space-x-2">
             <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -445,16 +497,65 @@
     </div>
 
     <!-- ============================================================= -->
-    <!-- TAB 3: STEP-BY-STEP GUIDE GMAIL                               -->
+    <!-- TAB 3: STEP-BY-STEP GUIDES (BREVO API & GMAIL)                -->
     <!-- ============================================================= -->
     <div id="pane-guide" class="hidden max-w-3xl mx-auto space-y-6">
+      
+      <!-- BREVO CLOUD GUIDE (Recommandé Render) -->
+      <div class="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl border border-emerald-200 shadow-sm p-5 sm:p-7 space-y-4">
+        <div class="flex items-center space-x-2.5">
+          <span class="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold text-sm">⚡</span>
+          <div>
+            <h2 class="text-base sm:text-lg font-bold text-emerald-950">Comment obtenir la clé API Brevo gratuite (Pour Render) ?</h2>
+            <p class="text-xs text-emerald-800">300 emails gratuits chaque jour, compatible à 100% avec Render sans aucun blocage !</p>
+          </div>
+        </div>
+
+        <div class="space-y-3 text-xs text-emerald-900">
+          <div class="flex items-start space-x-3 p-3 bg-white/80 rounded-xl border border-emerald-100">
+            <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center flex-shrink-0">1</span>
+            <div>
+              <p class="font-bold">Créez un compte gratuit sur Brevo :</p>
+              <p class="text-slate-600 mt-0.5">Allez sur <a href="https://onboarding.brevo.com/account/register" target="_blank" class="text-emerald-700 underline font-semibold">brevo.com</a> et inscrivez-vous en 30 secondes (gratuit, sans carte bancaire).</p>
+            </div>
+          </div>
+
+          <div class="flex items-start space-x-3 p-3 bg-white/80 rounded-xl border border-emerald-100">
+            <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center flex-shrink-0">2</span>
+            <div>
+              <p class="font-bold">Accédez à vos clés API :</p>
+              <p class="text-slate-600 mt-0.5">Ouvrez directement la page : <a href="https://app.brevo.com/settings/keys/api" target="_blank" class="text-emerald-700 underline font-semibold">app.brevo.com/settings/keys/api</a></p>
+            </div>
+          </div>
+
+          <div class="flex items-start space-x-3 p-3 bg-white/80 rounded-xl border border-emerald-100">
+            <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center flex-shrink-0">3</span>
+            <div>
+              <p class="font-bold">Générez votre clé :</p>
+              <p class="text-slate-600 mt-0.5">Cliquez sur <b>« Générer une nouvelle clé API »</b>, donnez-lui un nom (ex: <i>MailStorm</i>) puis copiez la clé (qui commence par <code class="bg-emerald-100 px-1 py-0.5 rounded font-mono text-[11px]">xkeysib-...</code>).</p>
+            </div>
+          </div>
+
+          <div class="flex items-start space-x-3 p-3 bg-white/80 rounded-xl border border-emerald-100">
+            <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center flex-shrink-0">4</span>
+            <div>
+              <p class="font-bold">Collez-la dans MailStorm :</p>
+              <p class="text-slate-600 mt-0.5">Dans l'onglet <b>Paramètres</b>, collez la clé dans le champ <b>Clé API Brevo</b> et cliquez sur <b>Enregistrer</b> !</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="pt-1 text-center">
+          <button onclick="switchTab('settings')" class="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-sm transition">
+            Aller dans Paramètres pour coller ma clé
+          </button>
+        </div>
+      </div>
+
       <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
-        
         <div>
-          <h2 class="text-xl font-bold text-slate-900">Comment obtenir votre mot de passe d'application Gmail ?</h2>
-          <p class="text-sm text-slate-500 mt-1">
-            Google exige un mot de passe sécurisé d'application (App Password) de 16 caractères pour autoriser les applications Python à envoyer des emails.
-          </p>
+          <h2 class="text-base sm:text-lg font-bold text-slate-900">Guide Gmail : Comment obtenir le mot de passe d'application ?</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Pour l'utilisation en local sur votre PC (port SMTP 587).</p>
         </div>
 
         <!-- Steps -->
@@ -649,9 +750,41 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
+    let currentProvider = "brevo";
+
+    function setProvider(prov) {
+      currentProvider = prov;
+      const btnBrevo = document.getElementById("btn-provider-brevo");
+      const btnGmail = document.getElementById("btn-provider-gmail");
+      const groupBrevo = document.getElementById("group-brevo");
+      const groupGmail = document.getElementById("group-gmail");
+      const hint = document.getElementById("provider-hint");
+
+      if (prov === "brevo") {
+        btnBrevo.className = "py-2.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-2 bg-white text-indigo-700 shadow-sm border border-slate-200";
+        btnGmail.className = "py-2.5 px-3 rounded-lg text-xs font-semibold transition flex items-center justify-center space-x-2 text-slate-600 hover:text-slate-900";
+        groupBrevo.classList.remove("hidden");
+        groupGmail.classList.add("hidden");
+        hint.innerHTML = `<span>✅ <b>300 emails/jour gratuits :</b> utilise le port 443 (HTTPS), 100% garanti sur Render sans blocage de port.</span>`;
+        hint.className = "text-[11px] text-emerald-700 font-medium mt-2 flex items-center space-x-1";
+      } else {
+        btnGmail.className = "py-2.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center space-x-2 bg-white text-indigo-700 shadow-sm border border-slate-200";
+        btnBrevo.className = "py-2.5 px-3 rounded-lg text-xs font-semibold transition flex items-center justify-center space-x-2 text-slate-600 hover:text-slate-900";
+        groupGmail.classList.remove("hidden");
+        groupBrevo.classList.add("hidden");
+        hint.innerHTML = `<span>🔵 <b>Mode Gmail SMTP (Port 587) :</b> fonctionne idéalement en local sur PC (bloqué sur Render Free).</span>`;
+        hint.className = "text-[11px] text-indigo-700 font-medium mt-2 flex items-center space-x-1";
+      }
+    }
+
     // Toggle Password visibility
     function togglePasswordVisibility() {
       const input = document.getElementById("cfg-password");
+      input.type = input.type === "password" ? "text" : "password";
+    }
+
+    function toggleBrevoKeyVisibility() {
+      const input = document.getElementById("cfg-brevo-key");
       input.type = input.type === "password" ? "text" : "password";
     }
 
@@ -661,18 +794,29 @@
         const res = await fetch("/api/config");
         savedConfig = await res.json();
         
-        document.getElementById("cfg-gmail").value = savedConfig.gmail_address || "";
+        const prov = savedConfig.provider || "brevo";
+        setProvider(prov);
+
         document.getElementById("cfg-sender-name").value = savedConfig.sender_name || "";
+        document.getElementById("cfg-sender-email").value = savedConfig.sender_email || savedConfig.gmail_address || "";
+        
+        if (savedConfig.has_brevo_key) {
+          document.getElementById("cfg-brevo-key").placeholder = "•••••••••••••••• (Clé enregistrée)";
+        }
         if (savedConfig.has_password) {
           document.getElementById("cfg-password").placeholder = "•••••••••••••••• (Enregistré)";
         }
+
         if (savedConfig.default_delay) {
           document.getElementById("delay-slider").value = savedConfig.default_delay;
           document.getElementById("delay-display").textContent = parseFloat(savedConfig.default_delay).toFixed(1) + " sec";
         }
 
         const warn = document.getElementById("unconfigured-warning");
-        if (!savedConfig.gmail_address || !savedConfig.has_password) {
+        const isBrevoConfigured = prov === "brevo" && savedConfig.sender_email && savedConfig.has_brevo_key;
+        const isGmailConfigured = prov === "gmail" && savedConfig.sender_email && savedConfig.has_password;
+
+        if (!isBrevoConfigured && !isGmailConfigured) {
           warn.classList.remove("hidden");
         } else {
           warn.classList.add("hidden");
@@ -684,16 +828,20 @@
 
     // Save Settings
     async function saveSettings() {
-      const gmail = document.getElementById("cfg-gmail").value.trim();
-      const pwd = document.getElementById("cfg-password").value.trim();
       const senderName = document.getElementById("cfg-sender-name").value.trim();
+      const senderEmail = document.getElementById("cfg-sender-email").value.trim();
+      const brevoKey = document.getElementById("cfg-brevo-key").value.trim();
+      const pwd = document.getElementById("cfg-password").value.trim();
       const delay = parseFloat(document.getElementById("delay-slider").value);
 
       const payload = {
-        gmail_address: gmail,
+        provider: currentProvider,
         sender_name: senderName,
+        sender_email: senderEmail,
+        gmail_address: senderEmail,
         default_delay: delay
       };
+      if (brevoKey) payload.brevo_api_key = brevoKey;
       if (pwd) payload.app_password = pwd;
 
       try {
@@ -715,11 +863,12 @@
       }
     }
 
-    // Test Gmail SMTP Connection
-    async function testGmailConnection() {
+    // Test Connection (Brevo API or Gmail SMTP)
+    async function testConnection() {
       const btn = document.getElementById("btn-test-conn");
       const resBox = document.getElementById("connection-test-result");
-      const gmail = document.getElementById("cfg-gmail").value.trim();
+      const senderEmail = document.getElementById("cfg-sender-email").value.trim();
+      const brevoKey = document.getElementById("cfg-brevo-key").value.trim();
       const pwd = document.getElementById("cfg-password").value.trim();
 
       btn.disabled = true;
@@ -732,11 +881,19 @@
       `;
       resBox.className = "hidden";
 
+      const payload = {
+        provider: currentProvider,
+        sender_email: senderEmail,
+        gmail_address: senderEmail,
+        brevo_api_key: brevoKey,
+        app_password: pwd
+      };
+
       try {
         const res = await fetch("/api/test-connection", {
           method: "POST",
           headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({ gmail_address: gmail, app_password: pwd })
+          body: JSON.stringify(payload)
         });
         const data = await res.json();
         resBox.classList.remove("hidden");
@@ -750,7 +907,7 @@
       } catch (e) {
         resBox.classList.remove("hidden");
         resBox.className = "p-3.5 rounded-xl text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200";
-        resBox.textContent = "❌ Impossible de contacter le serveur local.";
+        resBox.textContent = "❌ Impossible de contacter le serveur.";
       } finally {
         btn.disabled = false;
         btn.innerHTML = `
@@ -1016,7 +1173,7 @@
       const targetInput = document.getElementById("modal-test-target");
       const feedback = document.getElementById("modal-test-feedback");
       feedback.className = "hidden";
-      targetInput.value = savedConfig.gmail_address || "";
+      targetInput.value = savedConfig.sender_email || savedConfig.gmail_address || "";
       modal.classList.remove("hidden");
     }
 
@@ -1044,6 +1201,7 @@
           method: "POST",
           headers: {"Content-Type": "application/json"},
           body: JSON.stringify({
+            provider: currentProvider,
             test_email: target,
             subject: subject,
             content: content
@@ -1074,8 +1232,11 @@
       const subject = document.getElementById("subject-input").value.trim();
       const content = document.getElementById("body-input").value.trim();
 
-      if (!savedConfig.gmail_address || !savedConfig.has_password) {
-        alert("⚠️ Veuillez d'abord configurer vos identifiants Gmail dans l'onglet 'Paramètres Gmail'.");
+      const hasBrevo = currentProvider === "brevo" && (savedConfig.has_brevo_key || document.getElementById("cfg-brevo-key").value.trim());
+      const hasGmail = currentProvider === "gmail" && (savedConfig.has_password || document.getElementById("cfg-password").value.trim());
+
+      if ((currentProvider === "brevo" && !hasBrevo) || (currentProvider === "gmail" && !hasGmail)) {
+        alert("⚠️ Veuillez d'abord configurer vos identifiants dans l'onglet 'Paramètres'.");
         switchTab('settings');
         return;
       }
@@ -1101,7 +1262,7 @@
       const estSeconds = emails.length * delay;
       const estMin = (estSeconds / 60).toFixed(1);
 
-      if (!confirm(`🚀 Êtes-vous sûr de vouloir lancer l'envoi de ${emails.length} emails ?\n\nDélai: ${delay}s entre chaque email (Durée estimée: ~${estMin} minutes).`)) {
+      if (!confirm(`🚀 Êtes-vous sûr de vouloir lancer l'envoi de ${emails.length} emails via ${currentProvider.toUpperCase()} ?\n\nDélai: ${delay}s entre chaque email (Durée estimée: ~${estMin} minutes).`)) {
         return;
       }
 
@@ -1110,6 +1271,7 @@
 
     async function startCampaign(recipients, subject, content, delay) {
       const payload = {
+        provider: currentProvider,
         recipients: recipients,
         subject: subject,
         content: content,
