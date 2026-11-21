@@ -437,6 +437,7 @@
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
               </button>
             </div>
+            <div id="brevo-key-helper" class="hidden text-[11px] font-medium"></div>
             <p class="text-[11px] text-slate-500">
               💡 Brevo offre 300 emails gratuits chaque jour. L'envoi passe par l'API REST HTTPS (Port 443), qui n'est jamais bloquée sur Render.
             </p>
@@ -532,7 +533,13 @@
             <span class="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center justify-center flex-shrink-0">3</span>
             <div>
               <p class="font-bold">Générez votre clé :</p>
-              <p class="text-slate-600 mt-0.5">Cliquez sur <b>« Générer une nouvelle clé API »</b>, donnez-lui un nom (ex: <i>MailStorm</i>) puis copiez la clé (qui commence par <code class="bg-emerald-100 px-1 py-0.5 rounded font-mono text-[11px]">xkeysib-...</code>).</p>
+              <p class="text-slate-600 mt-0.5">Cliquez sur <b>« Générer une nouvelle clé API »</b> (choisissez <i>Accès complet</i> ou laissez par défaut) et donnez-lui un nom (ex: <i>MailStorm</i>).</p>
+              <div class="mt-2 p-2.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-[11px] space-y-1">
+                <p class="font-bold flex items-center space-x-1">
+                  <span>⚠️ ÉTAPE CRUCIALE :</span>
+                </p>
+                <p>Cliquez immédiatement sur le bouton <b>« Copier » 📋</b> dans le pop-up avant de le fermer ! Brevo ne réaffiche <b>JAMAIS</b> la clé complète après fermeture. (Une vraie clé fait 89 caractères. Si vous la copiez depuis le tableau de la liste, elle sera coupée à 68 caractères et ne fonctionnera pas).</p>
+              </div>
             </div>
           </div>
 
@@ -788,6 +795,30 @@
       input.type = input.type === "password" ? "text" : "password";
     }
 
+    // Live validation feedback for Brevo API Key
+    document.addEventListener("DOMContentLoaded", () => {
+      const brevoInput = document.getElementById("cfg-brevo-key");
+      const helper = document.getElementById("brevo-key-helper");
+      if (brevoInput && helper) {
+        brevoInput.addEventListener("input", () => {
+          const val = brevoInput.value.trim();
+          if (!val) {
+            helper.className = "hidden text-[11px] font-medium";
+            helper.textContent = "";
+            return;
+          }
+          helper.classList.remove("hidden");
+          if (val.length < 80) {
+            helper.className = "p-2 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-medium";
+            helper.innerHTML = `⚠️ <b>Clé incomplète (${val.length}/89 car.) :</b> Dans Brevo, la clé est coupée dans la liste. Cliquez sur <b>« Générer une nouvelle clé API »</b> et cliquez impérativement sur le bouton <b>Copier 📋</b> du pop-up.`;
+          } else {
+            helper.className = "p-2 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-medium";
+            helper.innerHTML = `✅ <b>Longueur valide (${val.length} caractères) !</b> Vous pouvez tester ou enregistrer.`;
+          }
+        });
+      }
+    });
+
     // Fetch Settings from backend
     async function fetchConfig() {
       try {
@@ -899,10 +930,10 @@
         resBox.classList.remove("hidden");
         if (data.success) {
           resBox.className = "p-3.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200";
-          resBox.textContent = "✅ " + data.message;
+          resBox.textContent = (data.message.startsWith("✅") ? "" : "✅ ") + data.message;
         } else {
           resBox.className = "p-3.5 rounded-xl text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200";
-          resBox.textContent = "❌ " + data.message;
+          resBox.textContent = (data.message.startsWith("❌") ? "" : "❌ ") + data.message;
         }
       } catch (e) {
         resBox.classList.remove("hidden");
