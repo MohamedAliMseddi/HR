@@ -68,6 +68,45 @@ def save_config(data):
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(current, f, indent=2, ensure_ascii=False)
 
+def load_history():
+    if os.path.exists(LOGS_FILE):
+        try:
+            with open(LOGS_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return []
+    return []
+
+def save_campaign_to_history(entry):
+    history = load_history()
+    history.insert(0, entry)
+    history = history[:50]  # Conserver les 50 dernières campagnes
+    try:
+        with open(LOGS_FILE, "w", encoding="utf-8") as f:
+            json.dump(history, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"Erreur sauvegarde historique: {e}")
+
+def apply_template_variables(text, rec_email, rec_data=None):
+    """
+    Remplace les variables standards ({email}, {date}) ainsi que toutes les
+    colonnes dynamiques issues d'un fichier Excel ({Nom}, {Prénom}, {Club}, etc.)
+    """
+    if not text:
+        return ""
+    result = text.replace("{email}", rec_email).replace("{EMAIL}", rec_email)
+    result = result.replace("{date}", time.strftime("%d/%m/%Y")).replace("{DATE}", time.strftime("%d/%m/%Y"))
+    
+    if isinstance(rec_data, dict):
+        for k, v in rec_data.items():
+            k_str = str(k).strip()
+            if k_str.lower() in ("email", "mail"):
+                continue
+            val_str = str(v) if v is not None else ""
+            pattern = re.compile(re.escape("{" + k_str + "}"), re.IGNORECASE)
+            result = pattern.sub(val_str, result)
+    return result
+
 def verify_brevo_credentials(api_key):
     """
     Vérifie la clé API Brevo via HTTPS (Port 443 - Ouvert partout dans le Cloud)
@@ -140,15 +179,14 @@ def verify_brevo_credentials(api_key):
 
     return False, f"Clé Brevo invalide ou non reconnue : {last_error}. Générez une nouvelle clé sur brevo.com."
 
-def send_single_email_brevo(api_key, sender_email, sender_name, recipient, subject, content_html, attachments=None):
+def send_single_email_brevo(api_key, sender_email, sender_name, recipient, subject, content_html, attachments=None, recipient_data=None):
     """
-    Envoie un email via l'API REST de Brevo (HTTPS Port 443)
+    Envoie un email via l'API REST de Brevo (HTTPS Port 443) avec support des variables Excel
     """
     clean_key = api_key.strip()
     
-    personalized_subject = subject.replace("{email}", recipient)
-    personalized_content = content_html.replace("{email}", recipient)
-    personalized_content = personalized_content.replace("{date}", time.strftime("%d/%m/%Y"))
+    personalized_subject = apply_template_variables(subject, recipient, recipient_data)
+    personalized_content = apply_template_variables(content_html, recipient, recipient_data)
 
     payload = {
         "sender": {
@@ -223,16 +261,14 @@ def verify_gmail_credentials(email_address, app_password):
     except Exception as e:
         return False, f"Erreur de connexion : {str(e)}"
 
-def send_single_email(sender_email, app_password, sender_name, recipient, subject, content_html, attachments=None):
+def send_single_email(sender_email, app_password, sender_name, recipient, subject, content_html, attachments=None, recipient_data=None):
     """
-    Envoie un seul email via Gmail SMTP avec sujet propre et en-têtes RFC standards
+    Envoie un seul email via Gmail SMTP avec support des variables Excel
     """
     clean_password = app_password.replace(" ", "")
 
-    # Remplacement des variables personnalisées (Sujet 100% propre, sans aucun ajout)
-    personalized_subject = subject.replace("{email}", recipient)
-    personalized_content = content_html.replace("{email}", recipient)
-    personalized_content = personalized_content.replace("{date}", time.strftime("%d/%m/%Y"))
+    personalized_subject = apply_template_variables(subject, recipient, recipient_data)
+    personalized_content = apply_template_variables(content_html, recipient, recipient_data)
     
     msg = MIMEMultipart("mixed")
     if sender_name:
@@ -296,7 +332,17 @@ def worker_campaign(recipients, subject, content_html, provider, sender_email, s
         campaign_state["start_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
         campaign_state["end_time"] = None
 
-    for idx, recipient in enumerate(recipients):
+    for idx, item in enumerate(recipients):
+        if isinstance(item, dict):
+            recipient_email = (item.get("email") or item.get("Email") or item.get("mail") or item.get("Mail") or "").strip()
+            recipient_data = item
+        else:
+            recipient_email = str(item).strip()
+            recipient_data = {"email": recipient_email}
+
+        if not recipient_email or "@" not in recipient_email:
+            continue
+
         with state_lock:
             if campaign_state["should_stop"]:
                 campaign_state["logs"].append({
@@ -307,7 +353,7 @@ def worker_campaign(recipients, subject, content_html, provider, sender_email, s
                 })
                 break
             campaign_state["current_index"] = idx + 1
-            campaign_state["current_email"] = recipient
+            campaign_state["current_email"] = recipient_email
 
         success = False
         error_msg = ""
@@ -317,20 +363,22 @@ def worker_campaign(recipients, subject, content_html, provider, sender_email, s
                     api_key=brevo_api_key,
                     sender_email=sender_email,
                     sender_name=sender_name,
-                    recipient=recipient,
+                    recipient=recipient_email,
                     subject=subject,
                     content_html=content_html,
-                    attachments=attachments
+                    attachments=attachments,
+                    recipient_data=recipient_data
                 )
             else:
                 send_single_email(
                     sender_email=sender_email,
                     app_password=app_password,
                     sender_name=sender_name,
-                    recipient=recipient,
+                    recipient=recipient_email,
                     subject=subject,
                     content_html=content_html,
-                    attachments=attachments
+                    attachments=attachments,
+                    recipient_data=recipient_data
                 )
             success = True
         except Exception as e:
@@ -341,7 +389,7 @@ def worker_campaign(recipients, subject, content_html, provider, sender_email, s
                 campaign_state["sent"] += 1
                 campaign_state["logs"].append({
                     "time": time.strftime("%H:%M:%S"),
-                    "email": recipient,
+                    "email": recipient_email,
                     "status": "success",
                     "details": "Envoyé avec succès"
                 })
@@ -349,7 +397,7 @@ def worker_campaign(recipients, subject, content_html, provider, sender_email, s
                 campaign_state["failed"] += 1
                 campaign_state["logs"].append({
                     "time": time.strftime("%H:%M:%S"),
-                    "email": recipient,
+                    "email": recipient_email,
                     "status": "error",
                     "details": error_msg or "Échec d'envoi"
                 })
@@ -362,6 +410,28 @@ def worker_campaign(recipients, subject, content_html, provider, sender_email, s
         campaign_state["is_running"] = False
         campaign_state["current_email"] = ""
         campaign_state["end_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        tot = campaign_state["total"]
+        snt = campaign_state["sent"]
+        fld = campaign_state["failed"]
+        logs_snapshot = list(campaign_state["logs"])
+        start_t = campaign_state["start_time"]
+        end_t = campaign_state["end_time"]
+
+    # Sauvegarder automatiquement cette campagne dans l'historique
+    save_campaign_to_history({
+        "id": str(uuid.uuid4())[:8],
+        "start_time": start_t,
+        "end_time": end_t,
+        "date_formatted": time.strftime("%d/%m/%Y à %H:%M"),
+        "subject": subject,
+        "content_html": content_html,
+        "provider": provider,
+        "total": tot,
+        "sent": snt,
+        "failed": fld,
+        "success_rate": round((snt / tot * 100), 1) if tot > 0 else 0,
+        "logs": logs_snapshot
+    })
 
 
 class MailServerHandler(BaseHTTPRequestHandler):
@@ -438,6 +508,38 @@ class MailServerHandler(BaseHTTPRequestHandler):
             self.send_response(200)
             self.send_header("Content-Type", "text/csv; charset=utf-8")
             self.send_header("Content-Disposition", 'attachment; filename="rapport_envoi.csv"')
+            self.send_header("Content-Length", str(len(csv_content)))
+            self.end_headers()
+            self.wfile.write(csv_content)
+            return
+
+        elif path == "/api/history":
+            history = load_history()
+            self.send_json({"success": True, "history": history})
+            return
+
+        elif path == "/api/history/export":
+            query = parse_qs(parsed.query)
+            camp_id = query.get("id", [""])[0]
+            history = load_history()
+            target_camp = next((c for c in history if str(c.get("id")) == str(camp_id)), None)
+            
+            if not target_camp:
+                self.send_error(404, "Campagne introuvable")
+                return
+
+            logs = target_camp.get("logs", [])
+            csv_lines = ["Heure,Email,Statut,Détails"]
+            for log in logs:
+                details = str(log.get('details', '')).replace('"', '""')
+                email_val = str(log.get('email', '')).replace('"', '""')
+                csv_lines.append(f'"{log.get("time")}","{email_val}","{log.get("status")}","{details}"')
+            csv_content = "\n".join(csv_lines).encode("utf-8-sig")
+
+            safe_filename = f"rapport_campagne_{camp_id}.csv"
+            self.send_response(200)
+            self.send_header("Content-Type", "text/csv; charset=utf-8")
+            self.send_header("Content-Disposition", f'attachment; filename="{safe_filename}"')
             self.send_header("Content-Length", str(len(csv_content)))
             self.end_headers()
             self.wfile.write(csv_content)
@@ -611,6 +713,27 @@ class MailServerHandler(BaseHTTPRequestHandler):
                     self.send_json({"success": True, "message": "Arrêt en cours..."})
                 else:
                     self.send_json({"success": False, "message": "Aucune campagne n'est en cours."})
+            return
+
+        elif path == "/api/history/delete":
+            camp_id = str(data.get("id", ""))
+            history = load_history()
+            new_history = [c for c in history if str(c.get("id")) != camp_id]
+            try:
+                with open(LOGS_FILE, "w", encoding="utf-8") as f:
+                    json.dump(new_history, f, indent=2, ensure_ascii=False)
+                self.send_json({"success": True, "message": "Campagne supprimée de l'historique."})
+            except Exception as e:
+                self.send_json({"success": False, "message": str(e)})
+            return
+
+        elif path == "/api/history/clear":
+            try:
+                with open(LOGS_FILE, "w", encoding="utf-8") as f:
+                    json.dump([], f, indent=2)
+                self.send_json({"success": True, "message": "Historique effacé avec succès."})
+            except Exception as e:
+                self.send_json({"success": False, "message": str(e)})
             return
 
         self.send_error(404, "Endpoint non trouvé")
