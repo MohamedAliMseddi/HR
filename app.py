@@ -71,29 +71,47 @@ def verify_brevo_credentials(api_key):
     Vérifie la clé API Brevo via HTTPS (Port 443 - Ouvert partout dans le Cloud)
     """
     clean_key = api_key.strip()
-    req = urllib.request.Request(
+    if not clean_key:
+        return False, "Veuillez saisir votre clé API Brevo."
+
+    # Tester les endpoints standards (Senders et Account)
+    endpoints = [
+        "https://api.brevo.com/v3/senders",
         "https://api.brevo.com/v3/account",
-        headers={
-            "accept": "application/json",
-            "api-key": clean_key,
-            "User-Agent": "MailStorm/1.0"
-        },
-        method="GET"
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=12) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            email = data.get("email", "")
-            return True, f"Connexion réussie à Brevo ({email}) ! Port 443 HTTPS validé."
-    except urllib.error.HTTPError as e:
+        "https://api.brevo.com/v3/smtp/templates"
+    ]
+
+    for ep in endpoints:
+        req = urllib.request.Request(
+            ep,
+            headers={
+                "accept": "application/json",
+                "api-key": clean_key,
+                "User-Agent": "MailStorm/1.0"
+            },
+            method="GET"
+        )
         try:
-            err_body = json.loads(e.read().decode("utf-8"))
-            msg = err_body.get("message", str(e))
-        except Exception:
-            msg = str(e)
-        return False, f"Erreur Brevo ({e.code}) : {msg}"
-    except Exception as e:
-        return False, f"Erreur de connexion Brevo : {str(e)}"
+            with urllib.request.urlopen(req, timeout=12) as resp:
+                return True, "✅ Connexion réussie à Brevo ! Clé API valide et Port 443 HTTPS prêt."
+        except urllib.error.HTTPError as e:
+            if e.code == 401:
+                return False, "❌ Clé API Brevo invalide (non reconnue). Vérifiez votre clé sur brevo.com."
+            elif e.code == 403:
+                # 403 signifie que la clé existe bien mais a des permissions restreintes
+                continue
+            else:
+                try:
+                    err_body = json.loads(e.read().decode("utf-8"))
+                    msg = err_body.get("message", str(e))
+                except Exception:
+                    msg = str(e)
+                return False, f"Erreur Brevo ({e.code}) : {msg}"
+        except Exception as e:
+            return False, f"Erreur de connexion Brevo : {str(e)}"
+
+    # Si tous ont retourné 403, la clé est reconnue par Brevo (pas 401)
+    return True, "✅ Clé API Brevo reconnue avec succès ! Prête pour l'envoi d'emails."
 
 def send_single_email_brevo(api_key, sender_email, sender_name, recipient, subject, content_html, attachments=None):
     """
