@@ -2,7 +2,10 @@
 <html lang="fr" class="h-full bg-slate-50">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <title>MailStorm - Bulk Email Sender Gmail</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- SheetJS for client-side Excel reading if needed -->
@@ -14,48 +17,56 @@
     .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
     .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    /* Avoid iOS tap delay */
+    button, a { touch-action: manipulation; }
   </style>
 </head>
-<body class="h-full flex flex-col text-slate-800">
+<body class="h-full flex flex-col text-slate-800 bg-slate-50 min-h-screen">
 
   <!-- TOP NAVBAR -->
-  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center space-x-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+  <header class="bg-white/95 backdrop-blur-md border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-2.5 sm:space-x-3">
+        <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-100 flex-shrink-0">
           <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
           </svg>
         </div>
         <div>
-          <div class="flex items-center space-x-2">
-            <h1 class="text-lg font-bold bg-gradient-to-r from-slate-900 to-indigo-900 bg-clip-text text-transparent">MailStorm</h1>
-            <span class="text-xs font-semibold px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">Gmail Edition</span>
+          <div class="flex items-center space-x-1.5 sm:space-x-2">
+            <h1 class="text-base sm:text-lg font-bold bg-gradient-to-r from-slate-900 to-indigo-900 bg-clip-text text-transparent">MailStorm</h1>
+            <span class="text-[10px] sm:text-xs font-semibold px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">Gmail</span>
           </div>
-          <p class="text-xs text-slate-500">Envoi d'emails groupés en toute simplicité</p>
+          <p class="text-[11px] text-slate-500 hidden sm:block">Envoi d'emails groupés en toute simplicité</p>
         </div>
       </div>
 
-      <!-- Navigation Tabs -->
-      <nav class="flex items-center space-x-1 sm:space-x-2">
-        <button onclick="switchTab('sender')" id="tab-sender" class="tab-btn px-3.5 py-2 rounded-lg text-sm font-semibold transition flex items-center space-x-1.5 bg-indigo-50 text-indigo-700">
+      <!-- Desktop Navigation Tabs (Hidden on small mobile) -->
+      <nav class="hidden sm:flex items-center space-x-1 sm:space-x-2">
+        <button onclick="switchTab('sender')" id="tab-sender" class="tab-btn px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center space-x-1.5 bg-indigo-50 text-indigo-700">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
           <span>Envoyer</span>
         </button>
-        <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn px-3.5 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center space-x-1.5">
+        <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center space-x-1.5">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
           <span>Paramètres Gmail</span>
         </button>
-        <button onclick="switchTab('guide')" id="tab-guide" class="tab-btn px-3.5 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center space-x-1.5">
+        <button onclick="switchTab('guide')" id="tab-guide" class="tab-btn px-3 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center space-x-1.5">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M12 18h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           <span>Aide & Guide</span>
         </button>
       </nav>
+
+      <!-- Mobile Quick Status indicator -->
+      <div class="sm:hidden flex items-center space-x-1.5 text-xs font-semibold px-2 py-1 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100">
+        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span class="text-[11px]">En ligne</span>
+      </div>
     </div>
   </header>
 
   <!-- MAIN CONTAINER -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+  <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 pb-24 sm:pb-8">
 
     <!-- GLOBAL GMAIL ALERT (if not configured) -->
     <div id="unconfigured-warning" class="hidden mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start space-x-3 text-amber-800">
@@ -271,28 +282,28 @@
       </div>
 
       <!-- LIVE PROGRESS & STATUS CARD -->
-      <div id="live-progress-card" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
-        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+      <div id="live-progress-card" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 space-y-4 sm:space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-100 gap-3">
           <div class="flex items-center space-x-3">
-            <div id="status-spinner" class="animate-spin rounded-full h-5 w-5 border-2 border-indigo-600 border-t-transparent"></div>
-            <div>
-              <h3 id="progress-title" class="font-bold text-slate-800 text-base">Campagne d'envoi en cours...</h3>
-              <p id="progress-subtitle" class="text-xs text-slate-500">Envoi en cours à : <span id="current-sending-email" class="font-mono font-medium text-slate-700">-</span></p>
+            <div id="status-spinner" class="animate-spin rounded-full h-5 w-5 border-2 border-indigo-600 border-t-transparent flex-shrink-0"></div>
+            <div class="min-w-0">
+              <h3 id="progress-title" class="font-bold text-slate-800 text-sm sm:text-base truncate">Campagne d'envoi en cours...</h3>
+              <p id="progress-subtitle" class="text-xs text-slate-500 truncate">Envoi en cours à : <span id="current-sending-email" class="font-mono font-medium text-slate-700">-</span></p>
             </div>
           </div>
-          <div class="flex items-center space-x-2">
+          <div class="flex items-center space-x-2 w-full sm:w-auto">
             <button 
               id="btn-stop-campaign"
               onclick="stopCampaign()" 
-              class="px-3.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition flex items-center space-x-1.5 border border-rose-200">
+              class="flex-1 sm:flex-none justify-center px-3.5 py-2 sm:py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition flex items-center space-x-1.5 border border-rose-200">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
-              <span>Arrêter l'envoi</span>
+              <span>Arrêter</span>
             </button>
             <a 
               href="/api/export-logs" 
-              class="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition flex items-center space-x-1.5 border border-slate-200">
+              class="flex-1 sm:flex-none justify-center px-3.5 py-2 sm:py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition flex items-center space-x-1.5 border border-slate-200">
               <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
-              <span>Télécharger CSV</span>
+              <span>Rapport CSV</span>
             </a>
           </div>
         </div>
@@ -308,23 +319,23 @@
           </div>
         </div>
 
-        <!-- Counters -->
-        <div class="grid grid-cols-4 gap-3">
-          <div class="bg-slate-50 p-3 rounded-xl text-center border border-slate-100">
-            <p class="text-[11px] font-semibold text-slate-500 uppercase">Total</p>
-            <p id="count-total" class="text-lg font-extrabold text-slate-800 mt-0.5">0</p>
+        <!-- Counters (2 columns on mobile, 4 columns on desktop) -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+          <div class="bg-slate-50 p-2.5 sm:p-3 rounded-xl text-center border border-slate-100">
+            <p class="text-[10px] sm:text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total</p>
+            <p id="count-total" class="text-base sm:text-lg font-extrabold text-slate-800 mt-0.5">0</p>
           </div>
-          <div class="bg-emerald-50 p-3 rounded-xl text-center border border-emerald-100">
-            <p class="text-[11px] font-semibold text-emerald-600 uppercase">Envoyés</p>
-            <p id="count-sent" class="text-lg font-extrabold text-emerald-700 mt-0.5">0</p>
+          <div class="bg-emerald-50 p-2.5 sm:p-3 rounded-xl text-center border border-emerald-100">
+            <p class="text-[10px] sm:text-[11px] font-semibold text-emerald-600 uppercase tracking-wider">Envoyés</p>
+            <p id="count-sent" class="text-base sm:text-lg font-extrabold text-emerald-700 mt-0.5">0</p>
           </div>
-          <div class="bg-rose-50 p-3 rounded-xl text-center border border-rose-100">
-            <p class="text-[11px] font-semibold text-rose-600 uppercase">Échoués</p>
-            <p id="count-failed" class="text-lg font-extrabold text-rose-700 mt-0.5">0</p>
+          <div class="bg-rose-50 p-2.5 sm:p-3 rounded-xl text-center border border-rose-100">
+            <p class="text-[10px] sm:text-[11px] font-semibold text-rose-600 uppercase tracking-wider">Échoués</p>
+            <p id="count-failed" class="text-base sm:text-lg font-extrabold text-rose-700 mt-0.5">0</p>
           </div>
-          <div class="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100">
-            <p class="text-[11px] font-semibold text-indigo-600 uppercase">Restants</p>
-            <p id="count-remaining" class="text-lg font-extrabold text-indigo-700 mt-0.5">0</p>
+          <div class="bg-indigo-50 p-2.5 sm:p-3 rounded-xl text-center border border-indigo-100">
+            <p class="text-[10px] sm:text-[11px] font-semibold text-indigo-600 uppercase tracking-wider">Restants</p>
+            <p id="count-remaining" class="text-base sm:text-lg font-extrabold text-indigo-700 mt-0.5">0</p>
           </div>
         </div>
 
@@ -412,12 +423,12 @@
         <div id="connection-test-result" class="hidden p-3.5 rounded-xl text-xs font-medium"></div>
 
         <!-- Buttons -->
-        <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+        <div class="pt-4 border-t border-slate-100 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <button 
             type="button" 
             onclick="testGmailConnection()" 
             id="btn-test-conn"
-            class="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-semibold transition flex items-center space-x-2">
+            class="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-semibold transition flex items-center justify-center space-x-2">
             <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             <span>Tester la connexion</span>
           </button>
@@ -425,7 +436,7 @@
           <button 
             type="button" 
             onclick="saveSettings()" 
-            class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-md shadow-indigo-100 transition">
+            class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-md shadow-indigo-100 transition flex items-center justify-center">
             Enregistrer les paramètres
           </button>
         </div>
@@ -535,26 +546,42 @@
   </main>
 
   <!-- MODAL TEST SEND -->
-  <div id="modal-test" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+  <div id="modal-test" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-xl space-y-4 mx-auto">
       <div class="flex items-center justify-between">
         <h3 class="font-bold text-slate-800 text-base">Envoyer un email de test</h3>
-        <button onclick="closeTestModal()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+        <button onclick="closeTestModal()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
       </div>
       <p class="text-xs text-slate-500">
         Vérifiez le rendu réel de votre email avant de lancer la grande campagne en envoyant un seul email à votre propre adresse.
       </p>
       <div>
         <label class="block text-xs font-semibold text-slate-700 mb-1">Email destinataire du test :</label>
-        <input type="email" id="modal-test-target" class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-500" placeholder="votre.email@gmail.com">
+        <input type="email" id="modal-test-target" class="w-full text-base sm:text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-500" placeholder="votre.email@gmail.com">
       </div>
       <div id="modal-test-feedback" class="hidden text-xs p-3 rounded-lg"></div>
-      <div class="flex items-center justify-end space-x-2 pt-2">
-        <button onclick="closeTestModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">Annuler</button>
-        <button onclick="sendTestEmailNow()" id="btn-do-test-send" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition">Envoyer le test</button>
+      <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-2">
+        <button onclick="closeTestModal()" class="w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition text-center">Annuler</button>
+        <button onclick="sendTestEmailNow()" id="btn-do-test-send" class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition text-center">Envoyer le test</button>
       </div>
     </div>
   </div>
+
+  <!-- MOBILE BOTTOM NAVIGATION (Barre fixe moderne pour smartphones) -->
+  <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 py-1.5 px-3 flex justify-around items-center shadow-lg">
+    <button onclick="switchTab('sender')" id="mobile-tab-sender" class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl text-indigo-600 font-bold transition">
+      <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
+      <span class="text-[10px]">Envoyer</span>
+    </button>
+    <button onclick="switchTab('settings')" id="mobile-tab-settings" class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 font-medium transition">
+      <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+      <span class="text-[10px]">Paramètres</span>
+    </button>
+    <button onclick="switchTab('guide')" id="mobile-tab-guide" class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl text-slate-400 font-medium transition">
+      <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M12 18h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <span class="text-[10px]">Guide</span>
+    </button>
+  </nav>
 
   <!-- JAVASCRIPT LOGIC -->
   <script>
@@ -585,18 +612,41 @@
       });
     });
 
-    // Navigation Tabs
+    // Navigation Tabs (Desktop & Mobile)
     function switchTab(tab) {
       ["sender", "settings", "guide"].forEach(t => {
         document.getElementById(`pane-${t}`).classList.add("hidden");
+        
+        // Desktop Tabs
         const btn = document.getElementById(`tab-${t}`);
-        btn.classList.remove("bg-indigo-50", "text-indigo-700", "font-semibold");
-        btn.classList.add("text-slate-600", "font-medium");
+        if (btn) {
+          btn.classList.remove("bg-indigo-50", "text-indigo-700", "font-semibold");
+          btn.classList.add("text-slate-600", "font-medium");
+        }
+
+        // Mobile Bottom Bar Tabs
+        const mBtn = document.getElementById(`mobile-tab-${t}`);
+        if (mBtn) {
+          mBtn.classList.remove("text-indigo-600", "font-bold");
+          mBtn.classList.add("text-slate-400", "font-medium");
+        }
       });
+
       document.getElementById(`pane-${tab}`).classList.remove("hidden");
+      
       const activeBtn = document.getElementById(`tab-${tab}`);
-      activeBtn.classList.add("bg-indigo-50", "text-indigo-700", "font-semibold");
-      activeBtn.classList.remove("text-slate-600", "font-medium");
+      if (activeBtn) {
+        activeBtn.classList.add("bg-indigo-50", "text-indigo-700", "font-semibold");
+        activeBtn.classList.remove("text-slate-600", "font-medium");
+      }
+
+      const activeMBtn = document.getElementById(`mobile-tab-${tab}`);
+      if (activeMBtn) {
+        activeMBtn.classList.add("text-indigo-600", "font-bold");
+        activeMBtn.classList.remove("text-slate-400", "font-medium");
+      }
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     // Toggle Password visibility
@@ -1169,13 +1219,13 @@
             }
 
             return `
-              <div class="px-4 py-2 flex items-center justify-between hover:bg-slate-50 transition">
-                <div class="flex items-center space-x-3 truncate">
-                  <span class="text-slate-400 text-[11px]">${log.time}</span>
-                  <span class="font-semibold text-slate-700 truncate">${log.email}</span>
+              <div class="px-3 sm:px-4 py-2 flex items-center justify-between hover:bg-slate-50 transition gap-2">
+                <div class="flex items-center space-x-2 sm:space-x-3 min-w-0 truncate">
+                  <span class="text-slate-400 text-[10px] sm:text-[11px] flex-shrink-0">${log.time}</span>
+                  <span class="font-semibold text-slate-700 text-xs truncate max-w-[140px] xs:max-w-[200px] sm:max-w-none">${log.email}</span>
                 </div>
-                <div class="flex items-center space-x-3">
-                  <span class="text-[11px] text-slate-500 hidden sm:inline truncate max-w-xs">${log.details}</span>
+                <div class="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
+                  <span class="text-[11px] text-slate-500 hidden md:inline truncate max-w-xs">${log.details}</span>
                   ${badge}
                 </div>
               </div>
