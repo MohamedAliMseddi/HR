@@ -111,6 +111,13 @@ def verify_brevo_credentials(api_key):
             except Exception:
                 msg = str(e)
             
+            if "unrecognised IP" in msg or "authorised_ips" in msg:
+                return False, (
+                    "Sécurité Brevo (IP Render détectée) : Brevo demande d'autoriser l'IP du serveur cloud Render. "
+                    "Ouvrez ce lien : https://app.brevo.com/security/authorised_ips et cliquez sur « Désactiver le blocage » "
+                    "(ou ouvrez le mail d'alerte reçu sur votre Gmail et cliquez sur « Autoriser cette IP »)."
+                )
+            
             last_error = f"{msg} (HTTP {e.code})"
             
             if e.code == 403:
@@ -190,6 +197,8 @@ def send_single_email_brevo(api_key, sender_email, sender_name, recipient, subje
             err_msg = err_body.get("message", str(e))
         except Exception:
             err_msg = str(e)
+        if "unrecognised IP" in err_msg or "authorised_ips" in err_msg:
+            raise Exception("Sécurité Brevo : Adresse IP Render bloquée. Désactivez le blocage IP sur app.brevo.com/security/authorised_ips ou autorisez l'IP dans l'email reçu.")
         raise Exception(f"Brevo: {err_msg}")
 
 def verify_gmail_credentials(email_address, app_password):
