@@ -1,0 +1,18 @@
+# Données sensibles et configuration locale
+config.json
+history.json
+
+# Cache Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environnements virtuels
+.env
+.venv
+env/
+venv/
+
+# Logs
+*.log
+rapport_envoi.csv

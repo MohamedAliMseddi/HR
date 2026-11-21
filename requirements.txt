@@ -1,0 +1,1 @@
+# MailStorm utilise la bibliothèque standard de Python (aucun paquet externe obligatoire)

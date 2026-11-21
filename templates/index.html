@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MailStorm - Bulk Email Sender Gmail</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- SheetJS for client-side Excel reading if needed -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .custom-scroll::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scroll::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+    .custom-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .custom-scroll::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="h-full flex flex-col text-slate-800">
+
+  <!-- TOP NAVBAR -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-100">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-lg font-bold bg-gradient-to-r from-slate-900 to-indigo-900 bg-clip-text text-transparent">MailStorm</h1>
+            <span class="text-xs font-semibold px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">Gmail Edition</span>
+          </div>
+          <p class="text-xs text-slate-500">Envoi d'emails groupés en toute simplicité</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex items-center space-x-1 sm:space-x-2">
+        <button onclick="switchTab('sender')" id="tab-sender" class="tab-btn px-3.5 py-2 rounded-lg text-sm font-semibold transition flex items-center space-x-1.5 bg-indigo-50 text-indigo-700">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
+          <span>Envoyer</span>
+        </button>
+        <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn px-3.5 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center space-x-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+          <span>Paramètres Gmail</span>
+        </button>
+        <button onclick="switchTab('guide')" id="tab-guide" class="tab-btn px-3.5 py-2 rounded-lg text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition flex items-center space-x-1.5">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M12 18h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span>Aide & Guide</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- GLOBAL GMAIL ALERT (if not configured) -->
+    <div id="unconfigured-warning" class="hidden mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start space-x-3 text-amber-800">
+      <svg class="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+      </svg>
+      <div class="flex-1 text-sm">
+        <p class="font-semibold">Compte Gmail non configuré !</p>
+        <p class="text-amber-700 mt-0.5">Pour envoyer des emails, vous devez d'abord saisir votre adresse Gmail et votre mot de passe d'application.</p>
+      </div>
+      <button onclick="switchTab('settings')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold shadow-sm transition">
+        Configurer maintenant
+      </button>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- TAB 1: SENDER DASHBOARD                                       -->
+    <!-- ============================================================= -->
+    <div id="pane-sender" class="space-y-6">
+      
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT COLUMN: DESTINATAIRES (5 COLS) -->
+        <div class="lg:col-span-5 space-y-6">
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+            
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div class="flex items-center space-x-2">
+                <span class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">1</span>
+                <h2 class="font-bold text-slate-800">Destinataires</h2>
+              </div>
+              <span id="badge-count" class="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+                0 email valide
+              </span>
+            </div>
+
+            <!-- Upload Zone -->
+            <div>
+              <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
+                Importer depuis un fichier (CSV, TXT, Excel)
+              </label>
+              <div 
+                id="dropzone"
+                onclick="document.getElementById('file-input').click()"
+                class="border-2 border-dashed border-slate-300 hover:border-indigo-400 rounded-xl p-4 text-center cursor-pointer transition bg-slate-50/50 hover:bg-indigo-50/30 group">
+                <input type="file" id="file-input" accept=".txt,.csv,.xlsx,.xls" class="hidden" onchange="handleFileUpload(event)">
+                <svg class="w-8 h-8 mx-auto text-slate-400 group-hover:text-indigo-600 transition mb-2" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m6.75 12l-3-3m0 0l-3 3m3-3v6m-1.5-15H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+                </svg>
+                <p class="text-xs font-medium text-slate-700">Cliquez ou glissez un fichier ici</p>
+                <p class="text-[11px] text-slate-400 mt-0.5">Formats acceptés : .txt, .csv, .xlsx</p>
+              </div>
+            </div>
+
+            <!-- Direct Paste Textarea -->
+            <div>
+              <div class="flex items-center justify-between mb-2">
+                <label for="emails-input" class="text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                  Ou collez vos emails directement
+                </label>
+                <button 
+                  type="button" 
+                  id="btn-clean-emails"
+                  onclick="cleanEmails()" 
+                  class="inline-flex items-center space-x-1.5 text-xs font-bold text-indigo-700 hover:text-indigo-900 bg-indigo-50 hover:bg-indigo-100 active:bg-indigo-200 px-2.5 py-1 rounded-lg border border-indigo-200 transition shadow-sm cursor-pointer">
+                  <svg class="w-3.5 h-3.5 text-indigo-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 12c0-1.232-.046-2.453-.138-3.662a4.006 4.006 0 00-3.7-3.7 48.678 48.678 0 00-7.324 0 4.006 4.006 0 00-3.7 3.7c-.017.22-.032.441-.046.662M19.5 12l3-3m-3 3l-3-3m-12 3c0 1.232.046 2.453.138 3.662a4.006 4.006 0 003.7 3.7 48.656 48.656 0 007.324 0 4.006 4.006 0 003.7-3.7c.017-.22.032-.441.046-.662M4.5 12l3 3m-3-3l-3 3"/></svg>
+                  <span>Nettoyer & dédoublonner</span>
+                </button>
+              </div>
+
+              <!-- Message de feedback immédiat après nettoyage -->
+              <div id="clean-feedback-banner" class="hidden mb-2 p-2.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-all">
+                <span id="clean-feedback-text"></span>
+                <button type="button" onclick="this.parentElement.classList.add('hidden')" class="text-slate-400 hover:text-slate-700 ml-2 font-bold text-sm">&times;</button>
+              </div>
+
+              <textarea 
+                id="emails-input" 
+                rows="8"
+                oninput="updateEmailCount()"
+                placeholder="exemple1@gmail.com&#10;exemple2@yahoo.fr&#10;exemple3@entreprise.com"
+                class="w-full text-xs font-mono p-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition custom-scroll resize-y bg-slate-50/30"></textarea>
+              <div class="flex items-center justify-between mt-1 text-[11px] text-slate-400">
+                <span>1 email par ligne, ou séparés par virgule</span>
+                <button onclick="clearEmails()" class="hover:text-rose-500 transition">Effacer tout</button>
+              </div>
+            </div>
+
+            <!-- Anti-Spam Safety Delay Slider -->
+            <div class="pt-3 border-t border-slate-100">
+              <div class="flex items-center justify-between mb-1.5">
+                <label for="delay-slider" class="text-xs font-semibold text-slate-700 flex items-center space-x-1">
+                  <span>⏱️ Délai de sécurité anti-spam</span>
+                </label>
+                <span id="delay-display" class="text-xs font-bold px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-md">2.0 sec</span>
+              </div>
+              <input 
+                id="delay-slider" 
+                type="range" 
+                min="0.5" 
+                max="10" 
+                step="0.5" 
+                value="2" 
+                oninput="document.getElementById('delay-display').textContent = parseFloat(this.value).toFixed(1) + ' sec'"
+                class="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+              <p class="text-[11px] text-slate-400 mt-1">
+                Pause entre chaque email pour protéger votre compte Gmail et éviter le blocage.
+              </p>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: MESSAGE COMPOSER (7 COLS) -->
+        <div class="lg:col-span-7 space-y-6">
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+            
+            <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div class="flex items-center space-x-2">
+                <span class="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">2</span>
+                <h2 class="font-bold text-slate-800">Contenu de l'Email</h2>
+              </div>
+              
+              <!-- Tab switch Visual / HTML / Preview -->
+              <div class="flex bg-slate-100 p-0.5 rounded-lg text-xs font-semibold text-slate-600">
+                <button onclick="setBodyView('editor')" id="btn-view-editor" class="px-2.5 py-1 rounded-md bg-white shadow-sm text-indigo-600">Éditeur</button>
+                <button onclick="setBodyView('preview')" id="btn-view-preview" class="px-2.5 py-1 rounded-md hover:text-slate-900">Aperçu en direct</button>
+              </div>
+            </div>
+
+            <!-- Objet / Subject -->
+            <div>
+              <div class="flex items-center justify-between mb-1.5">
+                <label for="subject-input" class="text-xs font-semibold text-slate-700">Objet / Sujet</label>
+                <div class="space-x-1">
+                  <button type="button" onclick="insertTag('subject', '{email}')" class="text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200">+ {email}</button>
+                  <button type="button" onclick="insertTag('subject', '{date}')" class="text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200">+ {date}</button>
+                </div>
+              </div>
+              <input 
+                type="text" 
+                id="subject-input" 
+                placeholder="Ex: Opportunité de collaboration / Information importante"
+                class="w-full text-sm font-medium px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition">
+            </div>
+
+            <!-- Body Editor View -->
+            <div id="body-editor-container">
+              <div class="flex items-center justify-between mb-1.5">
+                <label for="body-input" class="text-xs font-semibold text-slate-700">Message (Texte ou HTML)</label>
+                <div class="space-x-1">
+                  <button type="button" onclick="insertTemplate('pro')" class="text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-0.5 rounded border border-slate-200">Modèle Pro</button>
+                  <button type="button" onclick="insertTag('body', '{email}')" class="text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200">+ {email}</button>
+                  <button type="button" onclick="insertTag('body', '{date}')" class="text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded border border-slate-200">+ {date}</button>
+                </div>
+              </div>
+              <textarea 
+                id="body-input" 
+                rows="10"
+                placeholder="Bonjour,&#10;&#10;Nous avons le plaisir de vous contacter..."
+                class="w-full text-sm font-sans p-3.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition custom-scroll resize-y bg-slate-50/20"></textarea>
+            </div>
+
+            <!-- Live Preview View (Hidden by default) -->
+            <div id="body-preview-container" class="hidden">
+              <label class="block text-xs font-semibold text-slate-700 mb-1.5">Aperçu rendu (Tel que reçu par le destinataire) :</label>
+              <div id="preview-box" class="w-full min-h-[250px] max-h-[350px] p-4 rounded-xl border border-slate-200 bg-white overflow-y-auto text-sm prose max-w-none custom-scroll shadow-inner">
+                <!-- Injected via JS -->
+              </div>
+            </div>
+
+            <!-- Attachments Section -->
+            <div class="pt-2">
+              <div class="flex items-center justify-between mb-1.5">
+                <label class="text-xs font-semibold text-slate-700 flex items-center space-x-1">
+                  <span>📎 Pièces jointes (Optionnel)</span>
+                </label>
+                <label for="attachment-input" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer">
+                  + Ajouter un fichier
+                </label>
+                <input type="file" id="attachment-input" multiple class="hidden" onchange="handleAttachments(event)">
+              </div>
+              
+              <!-- Attached Files list -->
+              <div id="attachments-list" class="space-y-1.5 max-h-28 overflow-y-auto custom-scroll">
+                <p id="no-attachments-msg" class="text-[11px] text-slate-400 italic">Aucune pièce jointe sélectionnée.</p>
+              </div>
+            </div>
+
+            <!-- ACTION BUTTONS -->
+            <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+              <button 
+                type="button" 
+                onclick="openTestModal()" 
+                class="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-semibold transition flex items-center justify-center space-x-2">
+                <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.75 3.104v5.714a2.25 2.25 0 01-.659 1.591L5 14.5M9.75 3.104c-.251.023-.501.05-.75.082m.75-.082a24.301 24.301 0 014.5 0m0 0v5.714c0 .597.237 1.17.659 1.591L19.8 15.3M14.25 3.104c.251.023.501.05.75.082M19.8 15.3l-1.57.942a4.5 4.5 0 01-4.66 0L12 15.3m7.8 0A2.25 2.25 0 0121 17.25v2.25A2.25 2.25 0 0118.75 21.75H5.25A2.25 2.25 0 013 19.5v-2.25a2.25 2.25 0 011.2-1.95L5 14.5"/></svg>
+                <span>Tester d'abord</span>
+              </button>
+
+              <button 
+                type="button" 
+                id="btn-start-campaign"
+                onclick="confirmAndStart()" 
+                class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-sm font-bold shadow-md shadow-indigo-200 transition flex items-center justify-center space-x-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
+                <span>Lancer la campagne</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+
+      <!-- LIVE PROGRESS & STATUS CARD -->
+      <div id="live-progress-card" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-5">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+          <div class="flex items-center space-x-3">
+            <div id="status-spinner" class="animate-spin rounded-full h-5 w-5 border-2 border-indigo-600 border-t-transparent"></div>
+            <div>
+              <h3 id="progress-title" class="font-bold text-slate-800 text-base">Campagne d'envoi en cours...</h3>
+              <p id="progress-subtitle" class="text-xs text-slate-500">Envoi en cours à : <span id="current-sending-email" class="font-mono font-medium text-slate-700">-</span></p>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button 
+              id="btn-stop-campaign"
+              onclick="stopCampaign()" 
+              class="px-3.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold transition flex items-center space-x-1.5 border border-rose-200">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              <span>Arrêter l'envoi</span>
+            </button>
+            <a 
+              href="/api/export-logs" 
+              class="px-3.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition flex items-center space-x-1.5 border border-slate-200">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+              <span>Télécharger CSV</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Big Progress Bar -->
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs font-semibold">
+            <span class="text-slate-600">Progression globale</span>
+            <span id="progress-percentage" class="text-indigo-600 font-bold">0%</span>
+          </div>
+          <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden shadow-inner">
+            <div id="progress-bar-fill" class="h-full bg-gradient-to-r from-indigo-500 to-violet-600 transition-all duration-300 w-0"></div>
+          </div>
+        </div>
+
+        <!-- Counters -->
+        <div class="grid grid-cols-4 gap-3">
+          <div class="bg-slate-50 p-3 rounded-xl text-center border border-slate-100">
+            <p class="text-[11px] font-semibold text-slate-500 uppercase">Total</p>
+            <p id="count-total" class="text-lg font-extrabold text-slate-800 mt-0.5">0</p>
+          </div>
+          <div class="bg-emerald-50 p-3 rounded-xl text-center border border-emerald-100">
+            <p class="text-[11px] font-semibold text-emerald-600 uppercase">Envoyés</p>
+            <p id="count-sent" class="text-lg font-extrabold text-emerald-700 mt-0.5">0</p>
+          </div>
+          <div class="bg-rose-50 p-3 rounded-xl text-center border border-rose-100">
+            <p class="text-[11px] font-semibold text-rose-600 uppercase">Échoués</p>
+            <p id="count-failed" class="text-lg font-extrabold text-rose-700 mt-0.5">0</p>
+          </div>
+          <div class="bg-indigo-50 p-3 rounded-xl text-center border border-indigo-100">
+            <p class="text-[11px] font-semibold text-indigo-600 uppercase">Restants</p>
+            <p id="count-remaining" class="text-lg font-extrabold text-indigo-700 mt-0.5">0</p>
+          </div>
+        </div>
+
+        <!-- Logs Table -->
+        <div class="border border-slate-200 rounded-xl overflow-hidden">
+          <div class="bg-slate-50 px-4 py-2 border-b border-slate-200 text-xs font-semibold text-slate-600 flex justify-between items-center">
+            <span>Journal d'activité en temps réel</span>
+            <span id="logs-count" class="text-[11px] text-slate-400 font-normal">0 entrées</span>
+          </div>
+          <div class="max-h-60 overflow-y-auto custom-scroll divide-y divide-slate-100 text-xs font-mono" id="logs-container">
+            <!-- Dynamic log rows -->
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- TAB 2: GMAIL SETTINGS                                         -->
+    <!-- ============================================================= -->
+    <div id="pane-settings" class="hidden max-w-2xl mx-auto space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+        
+        <div class="border-b border-slate-100 pb-4">
+          <h2 class="text-lg font-bold text-slate-900">Configuration du compte Gmail</h2>
+          <p class="text-xs text-slate-500 mt-0.5">Configurez l'adresse d'envoi et votre mot de passe d'application Google sécurisé.</p>
+        </div>
+
+        <div class="space-y-4">
+          <!-- Nom de l'expéditeur -->
+          <div>
+            <label for="cfg-sender-name" class="block text-xs font-semibold text-slate-700 mb-1">
+              Nom de l'expéditeur (Affiché aux destinataires)
+            </label>
+            <input 
+              type="text" 
+              id="cfg-sender-name" 
+              placeholder="Ex: Mohamed Salah / Mon Entreprise"
+              class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition">
+          </div>
+
+          <!-- Adresse Gmail -->
+          <div>
+            <label for="cfg-gmail" class="block text-xs font-semibold text-slate-700 mb-1">
+              Adresse Gmail
+            </label>
+            <input 
+              type="email" 
+              id="cfg-gmail" 
+              placeholder="votre.adresse@gmail.com"
+              class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition">
+          </div>
+
+          <!-- Mot de passe d'application -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label for="cfg-password" class="text-xs font-semibold text-slate-700">
+                Mot de passe d'application Google (16 lettres)
+              </label>
+              <button type="button" onclick="switchTab('guide')" class="text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                Comment l'obtenir ?
+              </button>
+            </div>
+            <div class="relative">
+              <input 
+                type="password" 
+                id="cfg-password" 
+                placeholder="abcd efgh ijkl mnop"
+                class="w-full text-sm font-mono tracking-wider px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition pr-10">
+              <button 
+                type="button" 
+                onclick="togglePasswordVisibility()" 
+                class="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600">
+                <svg id="eye-icon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              </button>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-1">
+              ⚠️ Ce n'est PAS votre mot de passe habituel de Gmail. C'est un code de 16 lettres généré par Google pour autoriser l'envoi sécurisé.
+            </p>
+          </div>
+        </div>
+
+        <!-- Connection Test Result Box -->
+        <div id="connection-test-result" class="hidden p-3.5 rounded-xl text-xs font-medium"></div>
+
+        <!-- Buttons -->
+        <div class="pt-4 border-t border-slate-100 flex items-center justify-between">
+          <button 
+            type="button" 
+            onclick="testGmailConnection()" 
+            id="btn-test-conn"
+            class="px-4 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-sm font-semibold transition flex items-center space-x-2">
+            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span>Tester la connexion</span>
+          </button>
+
+          <button 
+            type="button" 
+            onclick="saveSettings()" 
+            class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-md shadow-indigo-100 transition">
+            Enregistrer les paramètres
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ============================================================= -->
+    <!-- TAB 3: STEP-BY-STEP GUIDE GMAIL                               -->
+    <!-- ============================================================= -->
+    <div id="pane-guide" class="hidden max-w-3xl mx-auto space-y-6">
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
+        
+        <div>
+          <h2 class="text-xl font-bold text-slate-900">Comment obtenir votre mot de passe d'application Gmail ?</h2>
+          <p class="text-sm text-slate-500 mt-1">
+            Google exige un mot de passe sécurisé d'application (App Password) de 16 caractères pour autoriser les applications Python à envoyer des emails.
+          </p>
+        </div>
+
+        <!-- Steps -->
+        <div class="space-y-5">
+          
+          <!-- Step 1 -->
+          <div class="flex items-start space-x-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">1</div>
+            <div class="space-y-1">
+              <h3 class="text-sm font-bold text-slate-800">Activer la validation en deux étapes (2-Step Verification)</h3>
+              <p class="text-xs text-slate-600">
+                Si ce n'est pas déjà fait sur votre compte Google, activez la validation en 2 étapes sur : 
+                <a href="https://myaccount.google.com/signinoptions/two-step-verification" target="_blank" class="text-indigo-600 underline font-semibold">myaccount.google.com/security</a>
+              </p>
+            </div>
+          </div>
+
+          <!-- Step 2 -->
+          <div class="flex items-start space-x-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">2</div>
+            <div class="space-y-1">
+              <h3 class="text-sm font-bold text-slate-800">Accéder aux mots de passe d'application</h3>
+              <p class="text-xs text-slate-600">
+                Ouvrez directement ce lien dans votre navigateur :
+              </p>
+              <div class="pt-1">
+                <a href="https://myaccount.google.com/apppasswords" target="_blank" class="inline-flex items-center space-x-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg text-xs font-bold border border-indigo-200 transition">
+                  <span>Ouvrir Google App Passwords</span>
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
+                </a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Step 3 -->
+          <div class="flex items-start space-x-4 p-4 rounded-xl bg-slate-50 border border-slate-100">
+            <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">3</div>
+            <div class="space-y-1">
+              <h3 class="text-sm font-bold text-slate-800">Créer un mot de passe</h3>
+              <p class="text-xs text-slate-600">
+                Écrivez un nom pour l'application (ex: <b>MailStorm</b> ou <b>Python</b>) puis cliquez sur <b>Créer</b>.
+              </p>
+            </div>
+          </div>
+
+          <!-- Step 4 -->
+          <div class="flex items-start space-x-4 p-4 rounded-xl bg-emerald-50 border border-emerald-100">
+            <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm flex-shrink-0">4</div>
+            <div class="space-y-1">
+              <h3 class="text-sm font-bold text-emerald-900">Copier les 16 lettres</h3>
+              <p class="text-xs text-emerald-800">
+                Google affichera un code jaune de 16 lettres (exemple: <code class="bg-emerald-100 px-1.5 py-0.5 rounded font-mono font-bold">abcd efgh ijkl mnop</code>). 
+                Copiez ce code et collez-le dans l'onglet <b>Paramètres Gmail</b> de MailStorm !
+              </p>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- FAQ: Pourquoi les emails se regroupent dans Gmail ? -->
+        <div class="p-5 rounded-2xl bg-indigo-50/60 border border-indigo-100 space-y-3">
+          <div class="flex items-center space-x-2">
+            <span class="text-lg">💡</span>
+            <h3 class="text-sm font-bold text-slate-800">Pourquoi plusieurs emails envoyés à la même personne se regroupent dans Gmail ?</h3>
+          </div>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Dans Gmail, il existe une option activée par défaut appelée <b>« Affichage par conversation » (Conversation View)</b>. 
+            Quand vous envoyez plusieurs emails avec le <b>même objet (sujet)</b> à la même adresse, Gmail les empile dans un seul bloc de discussion.
+          </p>
+          <div class="space-y-1.5 text-xs text-slate-700">
+            <p class="font-semibold text-indigo-900">À savoir :</p>
+            <ul class="list-disc list-inside space-y-1 pl-1 text-slate-600">
+              <li>L'objet de vos emails reste <b>100% propre</b>, exactement tel que vous l'écrivez (aucun code ni texte ajouté).</li>
+              <li>Dans une vraie campagne, chaque destinataire reçoit son propre email donc il n'y aura aucun regroupement chez lui.</li>
+              <li>Si vous testez en envoyant plusieurs fois à votre propre adresse et que vous voulez les voir séparés : allez dans votre boîte Gmail > <i>Paramètres ⚙️ > Afficher tous les paramètres > Général > Affichage par conversation > Désactiver l'affichage par conversation</i>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="pt-4 text-center">
+          <button onclick="switchTab('settings')" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-md shadow-indigo-100 transition">
+            J'ai mon mot de passe, configurer l'application
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- MODAL TEST SEND -->
+  <div id="modal-test" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-slate-800 text-base">Envoyer un email de test</h3>
+        <button onclick="closeTestModal()" class="text-slate-400 hover:text-slate-600 text-lg">&times;</button>
+      </div>
+      <p class="text-xs text-slate-500">
+        Vérifiez le rendu réel de votre email avant de lancer la grande campagne en envoyant un seul email à votre propre adresse.
+      </p>
+      <div>
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Email destinataire du test :</label>
+        <input type="email" id="modal-test-target" class="w-full text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-500" placeholder="votre.email@gmail.com">
+      </div>
+      <div id="modal-test-feedback" class="hidden text-xs p-3 rounded-lg"></div>
+      <div class="flex items-center justify-end space-x-2 pt-2">
+        <button onclick="closeTestModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition">Annuler</button>
+        <button onclick="sendTestEmailNow()" id="btn-do-test-send" class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition">Envoyer le test</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT LOGIC -->
+  <script>
+    let savedConfig = {};
+    let attachmentsList = [];
+    let pollInterval = null;
+
+    // Initialisation
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchConfig();
+      // Synchronisation du champ delay
+      const slider = document.getElementById("delay-slider");
+      document.getElementById("delay-display").textContent = parseFloat(slider.value).toFixed(1) + " sec";
+      
+      // Setup drag and drop for emails dropzone
+      const dropzone = document.getElementById("dropzone");
+      ["dragenter", "dragover"].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => { e.preventDefault(); dropzone.classList.add("border-indigo-500", "bg-indigo-50/50"); }, false);
+      });
+      ["dragleave", "drop"].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => { e.preventDefault(); dropzone.classList.remove("border-indigo-500", "bg-indigo-50/50"); }, false);
+      });
+      dropzone.addEventListener("drop", (e) => {
+        const dt = e.dataTransfer;
+        if (dt.files && dt.files.length) {
+          processFileForEmails(dt.files[0]);
+        }
+      });
+    });
+
+    // Navigation Tabs
+    function switchTab(tab) {
+      ["sender", "settings", "guide"].forEach(t => {
+        document.getElementById(`pane-${t}`).classList.add("hidden");
+        const btn = document.getElementById(`tab-${t}`);
+        btn.classList.remove("bg-indigo-50", "text-indigo-700", "font-semibold");
+        btn.classList.add("text-slate-600", "font-medium");
+      });
+      document.getElementById(`pane-${tab}`).classList.remove("hidden");
+      const activeBtn = document.getElementById(`tab-${tab}`);
+      activeBtn.classList.add("bg-indigo-50", "text-indigo-700", "font-semibold");
+      activeBtn.classList.remove("text-slate-600", "font-medium");
+    }
+
+    // Toggle Password visibility
+    function togglePasswordVisibility() {
+      const input = document.getElementById("cfg-password");
+      input.type = input.type === "password" ? "text" : "password";
+    }
+
+    // Fetch Settings from backend
+    async function fetchConfig() {
+      try {
+        const res = await fetch("/api/config");
+        savedConfig = await res.json();
+        
+        document.getElementById("cfg-gmail").value = savedConfig.gmail_address || "";
+        document.getElementById("cfg-sender-name").value = savedConfig.sender_name || "";
+        if (savedConfig.has_password) {
+          document.getElementById("cfg-password").placeholder = "•••••••••••••••• (Enregistré)";
+        }
+        if (savedConfig.default_delay) {
+          document.getElementById("delay-slider").value = savedConfig.default_delay;
+          document.getElementById("delay-display").textContent = parseFloat(savedConfig.default_delay).toFixed(1) + " sec";
+        }
+
+        const warn = document.getElementById("unconfigured-warning");
+        if (!savedConfig.gmail_address || !savedConfig.has_password) {
+          warn.classList.remove("hidden");
+        } else {
+          warn.classList.add("hidden");
+        }
+      } catch (e) {
+        console.error("Erreur chargement config:", e);
+      }
+    }
+
+    // Save Settings
+    async function saveSettings() {
+      const gmail = document.getElementById("cfg-gmail").value.trim();
+      const pwd = document.getElementById("cfg-password").value.trim();
+      const senderName = document.getElementById("cfg-sender-name").value.trim();
+      const delay = parseFloat(document.getElementById("delay-slider").value);
+
+      const payload = {
+        gmail_address: gmail,
+        sender_name: senderName,
+        default_delay: delay
+      };
+      if (pwd) payload.app_password = pwd;
+
+      try {
+        const res = await fetch("/api/config", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert("✅ " + data.message);
+          fetchConfig();
+          switchTab('sender');
+        } else {
+          alert("Erreur: " + data.message);
+        }
+      } catch (e) {
+        alert("Erreur de connexion au serveur.");
+      }
+    }
+
+    // Test Gmail SMTP Connection
+    async function testGmailConnection() {
+      const btn = document.getElementById("btn-test-conn");
+      const resBox = document.getElementById("connection-test-result");
+      const gmail = document.getElementById("cfg-gmail").value.trim();
+      const pwd = document.getElementById("cfg-password").value.trim();
+
+      btn.disabled = true;
+      btn.innerHTML = `
+        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-slate-700" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+        </svg>
+        <span>Test en cours...</span>
+      `;
+      resBox.className = "hidden";
+
+      try {
+        const res = await fetch("/api/test-connection", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ gmail_address: gmail, app_password: pwd })
+        });
+        const data = await res.json();
+        resBox.classList.remove("hidden");
+        if (data.success) {
+          resBox.className = "p-3.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200";
+          resBox.textContent = "✅ " + data.message;
+        } else {
+          resBox.className = "p-3.5 rounded-xl text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200";
+          resBox.textContent = "❌ " + data.message;
+        }
+      } catch (e) {
+        resBox.classList.remove("hidden");
+        resBox.className = "p-3.5 rounded-xl text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200";
+        resBox.textContent = "❌ Impossible de contacter le serveur local.";
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <span>Tester la connexion</span>
+        `;
+      }
+    }
+
+    // Extract valid emails from text
+    function extractValidEmails(text) {
+      const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+      const matches = text.match(emailRegex) || [];
+      // Deduplicate case-insensitively
+      const unique = [];
+      const seen = new Set();
+      for (const m of matches) {
+        const lower = m.toLowerCase();
+        if (!seen.has(lower)) {
+          seen.add(lower);
+          unique.push(m);
+        }
+      }
+      return unique;
+    }
+
+    function updateEmailCount() {
+      const text = document.getElementById("emails-input").value;
+      const emails = extractValidEmails(text);
+      const badge = document.getElementById("badge-count");
+      badge.textContent = `${emails.length} email${emails.length > 1 ? 's' : ''} valide${emails.length > 1 ? 's' : ''}`;
+      if (emails.length > 0) {
+        badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200";
+      } else {
+        badge.className = "text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600";
+      }
+    }
+
+    function cleanEmails() {
+      const inputEl = document.getElementById("emails-input");
+      const rawText = inputEl.value;
+      const banner = document.getElementById("clean-feedback-banner");
+      const textEl = document.getElementById("clean-feedback-text");
+
+      if (!rawText.trim()) {
+        banner.className = "mb-2 p-2.5 rounded-xl text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 flex items-center justify-between";
+        textEl.textContent = "⚠️ La zone est vide. Collez d'abord des adresses email !";
+        banner.classList.remove("hidden");
+        return;
+      }
+
+      // Chercher tous les emails avant dédoublonnage
+      const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+      const allMatches = rawText.match(emailRegex) || [];
+      const totalRawFound = allMatches.length;
+
+      if (totalRawFound === 0) {
+        banner.className = "mb-2 p-2.5 rounded-xl text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200 flex items-center justify-between";
+        textEl.textContent = "❌ Aucun email valide détecté dans le texte.";
+        banner.classList.remove("hidden");
+        return;
+      }
+
+      // Dédoublonnage insensible à la casse
+      const unique = [];
+      const seen = new Set();
+      let duplicatesCount = 0;
+
+      for (const m of allMatches) {
+        const lower = m.toLowerCase().trim();
+        if (!seen.has(lower)) {
+          seen.add(lower);
+          unique.push(lower);
+        } else {
+          duplicatesCount++;
+        }
+      }
+
+      // Mise à jour du textarea avec les emails propres (1 par ligne)
+      inputEl.value = unique.join("\n");
+      updateEmailCount();
+
+      // Animation visuelle flash vert sur le textarea
+      inputEl.classList.remove("border-slate-200");
+      inputEl.classList.add("border-emerald-500", "ring-4", "ring-emerald-200");
+      setTimeout(() => {
+        inputEl.classList.remove("border-emerald-500", "ring-4", "ring-emerald-200");
+        inputEl.classList.add("border-slate-200");
+      }, 1200);
+
+      // Affichage du message de confirmation
+      banner.classList.remove("hidden");
+      if (duplicatesCount > 0) {
+        banner.className = "mb-2 p-2.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center justify-between animate-pulse";
+        textEl.innerHTML = `✅ <b>${duplicatesCount} doublon(s) supprimé(s) !</b> Il reste <b>${unique.length} email(s) unique(s)</b> bien formaté(s).`;
+      } else {
+        banner.className = "mb-2 p-2.5 rounded-xl text-xs font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200 flex items-center justify-between";
+        textEl.innerHTML = `✅ <b>Liste déjà propre !</b> Aucun doublon détecté (${unique.length} email(s) unique(s)).`;
+      }
+
+      setTimeout(() => {
+        banner.classList.remove("animate-pulse");
+      }, 2000);
+    }
+
+    function clearEmails() {
+      if (confirm("Voulez-vous vraiment effacer la liste des destinataires ?")) {
+        document.getElementById("emails-input").value = "";
+        updateEmailCount();
+      }
+    }
+
+    // Handle File Upload (CSV, TXT, Excel)
+    function handleFileUpload(e) {
+      const file = e.target.files[0];
+      if (file) {
+        processFileForEmails(file);
+      }
+      e.target.value = "";
+    }
+
+    function processFileForEmails(file) {
+      const reader = new FileReader();
+      const ext = file.name.split('.').pop().toLowerCase();
+
+      if (ext === "xlsx" || ext === "xls") {
+        reader.onload = function(evt) {
+          try {
+            const data = new Uint8Array(evt.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+            let combinedText = "";
+            workbook.SheetNames.forEach(sheetName => {
+              const sheet = workbook.Sheets[sheetName];
+              combinedText += " " + XLSX.utils.sheet_to_csv(sheet);
+            });
+            appendExtractedEmails(combinedText, file.name);
+          } catch (err) {
+            alert("Erreur lors de la lecture du fichier Excel: " + err.message);
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      } else {
+        reader.onload = function(evt) {
+          appendExtractedEmails(evt.target.result, file.name);
+        };
+        reader.readAsText(file);
+      }
+    }
+
+    function appendExtractedEmails(text, filename) {
+      const newEmails = extractValidEmails(text);
+      if (newEmails.length === 0) {
+        alert(`Aucun email valide trouvé dans "${filename}".`);
+        return;
+      }
+      const existing = extractValidEmails(document.getElementById("emails-input").value);
+      const combined = Array.from(new Set([...existing, ...newEmails]));
+      document.getElementById("emails-input").value = combined.join("\n");
+      updateEmailCount();
+      alert(`✅ ${newEmails.length} email(s) extrait(s) de "${filename}" !`);
+    }
+
+    // Body Editor View Toggle
+    function setBodyView(view) {
+      const editorDiv = document.getElementById("body-editor-container");
+      const previewDiv = document.getElementById("body-preview-container");
+      const btnEditor = document.getElementById("btn-view-editor");
+      const btnPreview = document.getElementById("btn-view-preview");
+
+      if (view === "editor") {
+        editorDiv.classList.remove("hidden");
+        previewDiv.classList.add("hidden");
+        btnEditor.className = "px-2.5 py-1 rounded-md bg-white shadow-sm text-indigo-600";
+        btnPreview.className = "px-2.5 py-1 rounded-md hover:text-slate-900";
+      } else {
+        editorDiv.classList.add("hidden");
+        previewDiv.classList.remove("hidden");
+        btnPreview.className = "px-2.5 py-1 rounded-md bg-white shadow-sm text-indigo-600";
+        btnEditor.className = "px-2.5 py-1 rounded-md hover:text-slate-900";
+        
+        // Render preview
+        let rawContent = document.getElementById("body-input").value;
+        if (!rawContent.includes("<p>") && !rawContent.includes("<div>")) {
+          rawContent = rawContent.replace(/\n/g, "<br>");
+        }
+        rawContent = rawContent.replace(/{email}/g, '<span class="bg-indigo-100 text-indigo-800 px-1 rounded font-mono text-xs">destinataire@exemple.com</span>');
+        rawContent = rawContent.replace(/{date}/g, new Date().toLocaleDateString('fr-FR'));
+        document.getElementById("preview-box").innerHTML = rawContent || "<p class='text-slate-400 italic'>Corps de l'email vide...</p>";
+      }
+    }
+
+    function insertTag(target, tag) {
+      const el = target === "subject" ? document.getElementById("subject-input") : document.getElementById("body-input");
+      const start = el.selectionStart || el.value.length;
+      const end = el.selectionEnd || el.value.length;
+      el.value = el.value.substring(0, start) + tag + el.value.substring(end);
+      el.focus();
+    }
+
+    function insertTemplate(type) {
+      const template = 
+`<div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: auto;">
+  <h2 style="color: #4f46e5; border-bottom: 2px solid #e0e7ff; padding-bottom: 8px;">Proposition de collaboration</h2>
+  <p>Bonjour,</p>
+  <p>Nous vous contactons aujourd'hui car nous apprécions particulièrement votre travail.</p>
+  <p>Nous serions ravis d'échanger avec vous sur une opportunité de projet commun qui pourrait grandement vous intéresser.</p>
+  <p style="margin: 24px 0;">
+    <a href="https://example.com" style="background-color: #4f46e5; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">En savoir plus</a>
+  </p>
+  <p>Restant à votre entière disposition pour tout renseignement complémentaire.</p>
+  <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
+  <p style="font-size: 12px; color: #888;">Cordialement,<br>L'équipe MailStorm<br>{date}</p>
+</div>`;
+      document.getElementById("body-input").value = template;
+      document.getElementById("subject-input").value = "Proposition de collaboration pour {email}";
+      setBodyView('editor');
+    }
+
+    // Attachments Handling
+    function handleAttachments(e) {
+      const files = Array.from(e.target.files);
+      files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          attachmentsList.push({
+            name: file.name,
+            size: (file.size / 1024).toFixed(1) + " KB",
+            data: evt.target.result
+          });
+          renderAttachments();
+        };
+        reader.readAsDataURL(file);
+      });
+      e.target.value = "";
+    }
+
+    function removeAttachment(index) {
+      attachmentsList.splice(index, 1);
+      renderAttachments();
+    }
+
+    function renderAttachments() {
+      const container = document.getElementById("attachments-list");
+      if (attachmentsList.length === 0) {
+        container.innerHTML = `<p id="no-attachments-msg" class="text-[11px] text-slate-400 italic">Aucune pièce jointe sélectionnée.</p>`;
+        return;
+      }
+      container.innerHTML = attachmentsList.map((att, i) => `
+        <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-200 text-xs">
+          <div class="flex items-center space-x-2 truncate">
+            <span class="text-slate-500">📎</span>
+            <span class="font-medium text-slate-700 truncate">${att.name}</span>
+            <span class="text-[10px] text-slate-400">(${att.size})</span>
+          </div>
+          <button onclick="removeAttachment(${i})" class="text-rose-500 hover:text-rose-700 font-bold ml-2">&times;</button>
+        </div>
+      `).join("");
+    }
+
+    // Test Email Modal
+    function openTestModal() {
+      const modal = document.getElementById("modal-test");
+      const targetInput = document.getElementById("modal-test-target");
+      const feedback = document.getElementById("modal-test-feedback");
+      feedback.className = "hidden";
+      targetInput.value = savedConfig.gmail_address || "";
+      modal.classList.remove("hidden");
+    }
+
+    function closeTestModal() {
+      document.getElementById("modal-test").classList.add("hidden");
+    }
+
+    async function sendTestEmailNow() {
+      const target = document.getElementById("modal-test-target").value.trim();
+      const subject = document.getElementById("subject-input").value.trim() || "Test MailStorm";
+      const content = document.getElementById("body-input").value.trim() || "<p>Email de test</p>";
+      const btn = document.getElementById("btn-do-test-send");
+      const feedback = document.getElementById("modal-test-feedback");
+
+      if (!target) {
+        alert("Veuillez saisir une adresse email de test.");
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Envoi du test...";
+
+      try {
+        const res = await fetch("/api/test-send", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({
+            test_email: target,
+            subject: subject,
+            content: content
+          })
+        });
+        const data = await res.json();
+        feedback.classList.remove("hidden");
+        if (data.success) {
+          feedback.className = "text-xs p-3 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200";
+          feedback.textContent = "✅ " + data.message;
+        } else {
+          feedback.className = "text-xs p-3 rounded-lg bg-rose-50 text-rose-800 border border-rose-200";
+          feedback.textContent = "❌ " + data.message;
+        }
+      } catch (e) {
+        feedback.classList.remove("hidden");
+        feedback.className = "text-xs p-3 rounded-lg bg-rose-50 text-rose-800 border border-rose-200";
+        feedback.textContent = "❌ Erreur de communication.";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Envoyer le test";
+      }
+    }
+
+    // START CAMPAIGN
+    function confirmAndStart() {
+      const emails = extractValidEmails(document.getElementById("emails-input").value);
+      const subject = document.getElementById("subject-input").value.trim();
+      const content = document.getElementById("body-input").value.trim();
+
+      if (!savedConfig.gmail_address || !savedConfig.has_password) {
+        alert("⚠️ Veuillez d'abord configurer vos identifiants Gmail dans l'onglet 'Paramètres Gmail'.");
+        switchTab('settings');
+        return;
+      }
+
+      if (emails.length === 0) {
+        alert("⚠️ Aucun destinataire valide n'a été saisi.");
+        return;
+      }
+
+      if (!subject) {
+        alert("⚠️ Veuillez saisir le sujet de l'email.");
+        document.getElementById("subject-input").focus();
+        return;
+      }
+
+      if (!content) {
+        alert("⚠️ Le message ne peut pas être vide.");
+        document.getElementById("body-input").focus();
+        return;
+      }
+
+      const delay = parseFloat(document.getElementById("delay-slider").value);
+      const estSeconds = emails.length * delay;
+      const estMin = (estSeconds / 60).toFixed(1);
+
+      if (!confirm(`🚀 Êtes-vous sûr de vouloir lancer l'envoi de ${emails.length} emails ?\n\nDélai: ${delay}s entre chaque email (Durée estimée: ~${estMin} minutes).`)) {
+        return;
+      }
+
+      startCampaign(emails, subject, content, delay);
+    }
+
+    async function startCampaign(recipients, subject, content, delay) {
+      const payload = {
+        recipients: recipients,
+        subject: subject,
+        content: content,
+        delay: delay,
+        attachments: attachmentsList
+      };
+
+      try {
+        const res = await fetch("/api/start-campaign", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          // Show Live progress card
+          const progressCard = document.getElementById("live-progress-card");
+          progressCard.classList.remove("hidden");
+          progressCard.scrollIntoView({ behavior: 'smooth' });
+          
+          startPollingStatus();
+        } else {
+          alert("Erreur: " + data.message);
+        }
+      } catch (e) {
+        alert("Erreur de connexion au serveur.");
+      }
+    }
+
+    // Stop Campaign
+    async function stopCampaign() {
+      if (!confirm("Voulez-vous vraiment interrompre l'envoi de la campagne ?")) return;
+      try {
+        const res = await fetch("/api/stop-campaign", { method: "POST" });
+        const data = await res.json();
+        alert(data.message);
+      } catch (e) {
+        alert("Erreur lors de la demande d'arrêt.");
+      }
+    }
+
+    // Polling Campaign Status
+    function startPollingStatus() {
+      if (pollInterval) clearInterval(pollInterval);
+      pollInterval = setInterval(updateCampaignStatus, 1000);
+      updateCampaignStatus();
+    }
+
+    async function updateCampaignStatus() {
+      try {
+        const res = await fetch("/api/status");
+        const status = await res.json();
+
+        // Update counts
+        const total = status.total || 0;
+        const sent = status.sent || 0;
+        const failed = status.failed || 0;
+        const processed = sent + failed;
+        const remaining = Math.max(0, total - processed);
+
+        document.getElementById("count-total").textContent = total;
+        document.getElementById("count-sent").textContent = sent;
+        document.getElementById("count-failed").textContent = failed;
+        document.getElementById("count-remaining").textContent = remaining;
+
+        const percent = total > 0 ? Math.round((processed / total) * 100) : 0;
+        document.getElementById("progress-percentage").textContent = percent + "%";
+        document.getElementById("progress-bar-fill").style.width = percent + "%";
+
+        const title = document.getElementById("progress-title");
+        const spinner = document.getElementById("status-spinner");
+        const currentEmail = document.getElementById("current-sending-email");
+        const btnStop = document.getElementById("btn-stop-campaign");
+
+        if (status.is_running) {
+          title.textContent = `Envoi en cours (${processed}/${total})...`;
+          spinner.classList.remove("hidden");
+          currentEmail.textContent = status.current_email || "Préparation...";
+          btnStop.classList.remove("hidden");
+        } else {
+          spinner.classList.add("hidden");
+          btnStop.classList.add("hidden");
+          currentEmail.textContent = "Aucun";
+          if (processed > 0 && processed >= total) {
+            title.textContent = "🎉 Campagne terminée avec succès !";
+          } else if (status.should_stop) {
+            title.textContent = "⏹️ Campagne interrompue.";
+          } else {
+            title.textContent = "Campagne terminée.";
+          }
+          if (!status.is_running && processed >= total) {
+            clearInterval(pollInterval);
+          }
+        }
+
+        // Render logs
+        const logsContainer = document.getElementById("logs-container");
+        document.getElementById("logs-count").textContent = `${status.logs.length} entrée(s)`;
+        
+        if (status.logs && status.logs.length) {
+          logsContainer.innerHTML = status.logs.slice().reverse().map(log => {
+            let badge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">OK</span>`;
+            if (log.status === "error") {
+              badge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">ÉCHEC</span>`;
+            } else if (log.status === "warning") {
+              badge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">STOP</span>`;
+            }
+
+            return `
+              <div class="px-4 py-2 flex items-center justify-between hover:bg-slate-50 transition">
+                <div class="flex items-center space-x-3 truncate">
+                  <span class="text-slate-400 text-[11px]">${log.time}</span>
+                  <span class="font-semibold text-slate-700 truncate">${log.email}</span>
+                </div>
+                <div class="flex items-center space-x-3">
+                  <span class="text-[11px] text-slate-500 hidden sm:inline truncate max-w-xs">${log.details}</span>
+                  ${badge}
+                </div>
+              </div>
+            `;
+          }).join("");
+        } else {
+          logsContainer.innerHTML = `<div class="p-4 text-center text-slate-400 italic">En attente de démarrage...</div>`;
+        }
+
+      } catch (e) {
+        console.error("Erreur polling status:", e);
+      }
+    }
+  </script>
+</body>
+</html>
