@@ -4,6 +4,7 @@ history.json
 contact_lists.json
 scheduled_tasks.json
 custom_templates.json
+signatures.json
 
 # Cache Python
 __pycache__/

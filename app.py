@@ -31,6 +31,7 @@ LOGS_FILE = os.path.join(os.path.dirname(__file__), "history.json")
 LISTS_FILE = os.path.join(os.path.dirname(__file__), "contact_lists.json")
 SCHEDULED_FILE = os.path.join(os.path.dirname(__file__), "scheduled_tasks.json")
 TEMPLATES_FILE = os.path.join(os.path.dirname(__file__), "custom_templates.json")
+SIGNATURES_FILE = os.path.join(os.path.dirname(__file__), "signatures.json")
 
 # État global de l'envoi en cours
 campaign_state = {
@@ -138,6 +139,68 @@ def save_custom_templates(templates):
             json.dump(templates, f, indent=2, ensure_ascii=False)
     except Exception as e:
         print(f"Erreur sauvegarde modèles personnalisés: {e}")
+
+def save_signatures(signatures):
+    try:
+        with open(SIGNATURES_FILE, "w", encoding="utf-8") as f:
+            json.dump(signatures, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"Erreur sauvegarde signatures: {e}")
+
+def load_signatures():
+    if os.path.exists(SIGNATURES_FILE):
+        try:
+            with open(SIGNATURES_FILE, "r", encoding="utf-8") as f:
+                sigs = json.load(f)
+                if isinstance(sigs, list) and len(sigs) > 0:
+                    return sigs
+        except Exception:
+            pass
+
+    # Migration from config.json or default presets initialization
+    cfg = load_config()
+    existing_sig = (cfg.get("email_signature") or "").strip()
+    default_sigs = []
+
+    if existing_sig:
+        default_sigs.append({
+            "id": "sig-migrated",
+            "name": "Signature Actuelle",
+            "content": existing_sig,
+            "is_default": True,
+            "created_at": time.strftime("%d/%m/%Y à %H:%M"),
+            "updated_at": time.strftime("%d/%m/%Y à %H:%M")
+        })
+    else:
+        default_sigs.append({
+            "id": "sig-default",
+            "name": "Signature Professionnelle",
+            "content": """<div style="font-family: Arial, sans-serif; font-size: 13px; color: #334155; line-height: 1.5;">
+  <p style="margin: 0; font-size: 15px; font-weight: bold; color: #1e293b;">Mohamed Ali Mseddi</p>
+  <p style="margin: 2px 0 6px 0; color: #6366f1; font-weight: 600;">Responsable Partenariats & RH | EPIK Club</p>
+  <p style="margin: 0; color: #64748b; font-size: 12px;">📞 +216 00 000 000 | ✉️ contact@epikclub.com</p>
+  <p style="margin: 2px 0 0 0; color: #64748b; font-size: 12px;">🌐 <a href="https://epikclub.com" style="color: #6366f1; text-decoration: none; font-weight: 500;">epikclub.com</a> | 📍 Tunis, Tunisie</p>
+</div>""",
+            "is_default": True,
+            "created_at": time.strftime("%d/%m/%Y à %H:%M"),
+            "updated_at": time.strftime("%d/%m/%Y à %H:%M")
+        })
+
+    default_sigs.append({
+        "id": "sig-minimal",
+        "name": "Signature Personnelle / Courte",
+        "content": """<p style="font-family: Arial, sans-serif; font-size: 13px; color: #475569; margin: 0;">
+  Bien cordialement,<br>
+  <strong>Mohamed Ali</strong><br>
+  <span style="font-size: 11px; color: #94a3b8;">Envoyé via MailStorm</span>
+</p>""",
+        "is_default": False,
+        "created_at": time.strftime("%d/%m/%Y à %H:%M"),
+        "updated_at": time.strftime("%d/%m/%Y à %H:%M")
+    })
+
+    save_signatures(default_sigs)
+    return default_sigs
 
 def evaluate_spam_score(subject, content_html):
     subject = (subject or "").strip()
@@ -764,6 +827,9 @@ class MailServerHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/config":
             cfg = load_config()
+            sigs = load_signatures()
+            default_sig = next((s for s in sigs if s.get("is_default")), sigs[0] if sigs else None)
+            default_sig_content = default_sig.get("content", "") if default_sig else cfg.get("email_signature", "")
             safe_cfg = {
                 "provider": cfg.get("provider", "brevo"),
                 "sender_email": cfg.get("sender_email") or cfg.get("gmail_address", ""),
@@ -772,8 +838,10 @@ class MailServerHandler(BaseHTTPRequestHandler):
                 "has_brevo_key": bool(cfg.get("brevo_api_key")),
                 "sender_name": cfg.get("sender_name", ""),
                 "default_delay": cfg.get("default_delay", 2),
-                "email_signature": cfg.get("email_signature", ""),
-                "include_signature": cfg.get("include_signature", True)
+                "email_signature": default_sig_content,
+                "include_signature": cfg.get("include_signature", True),
+                "signatures": sigs,
+                "default_signature_id": default_sig.get("id", "") if default_sig else ""
             }
             self.send_json(safe_cfg)
             return
@@ -849,6 +917,11 @@ class MailServerHandler(BaseHTTPRequestHandler):
             self.send_json({"success": True, "templates": templates})
             return
 
+        elif path == "/api/signatures":
+            signatures = load_signatures()
+            self.send_json({"success": True, "signatures": signatures})
+            return
+
         self.send_error(404, "Page non trouvée")
 
     def do_POST(self):
@@ -866,6 +939,12 @@ class MailServerHandler(BaseHTTPRequestHandler):
 
         if path == "/api/config":
             save_config(data)
+            if "email_signature" in data:
+                sigs = load_signatures()
+                if sigs:
+                    def_sig = next((s for s in sigs if s.get("is_default")), sigs[0])
+                    def_sig["content"] = data["email_signature"]
+                    save_signatures(sigs)
             self.send_json({"success": True, "message": "Paramètres enregistrés avec succès !"})
             return
 
@@ -1255,6 +1334,110 @@ class MailServerHandler(BaseHTTPRequestHandler):
             templates = [t for t in templates if str(t.get("id")) != tpl_id]
             save_custom_templates(templates)
             self.send_json({"success": True, "message": "Modèle supprimé avec succès."})
+            return
+
+        elif path == "/api/signatures/save":
+            name = (data.get("name") or "").strip()
+            content = (data.get("content") or "").strip()
+            is_default = bool(data.get("is_default", False))
+            sig_id = str(data.get("id") or uuid.uuid4().hex[:8])
+
+            if not name:
+                self.send_json({"success": False, "message": "Veuillez donner un nom à la signature."})
+                return
+            if not content:
+                self.send_json({"success": False, "message": "Le contenu de la signature ne peut pas être vide."})
+                return
+
+            sigs = load_signatures()
+            existing = next((s for s in sigs if str(s.get("id")) == str(sig_id)), None)
+
+            if is_default or len(sigs) == 0:
+                for s in sigs:
+                    s["is_default"] = False
+                is_default = True
+
+            sig_entry = {
+                "id": sig_id,
+                "name": name,
+                "content": content,
+                "is_default": is_default,
+                "updated_at": time.strftime("%d/%m/%Y à %H:%M")
+            }
+
+            if existing:
+                sig_entry["created_at"] = existing.get("created_at", time.strftime("%d/%m/%Y à %H:%M"))
+                if existing.get("is_default") and not is_default:
+                    other_default = any(s.get("is_default") for s in sigs if str(s.get("id")) != str(sig_id))
+                    if not other_default:
+                        sig_entry["is_default"] = True
+                sigs = [sig_entry if str(s.get("id")) == str(sig_id) else s for s in sigs]
+            else:
+                sig_entry["created_at"] = time.strftime("%d/%m/%Y à %H:%M")
+                sigs.append(sig_entry)
+
+            if not any(s.get("is_default") for s in sigs):
+                sigs[0]["is_default"] = True
+
+            save_signatures(sigs)
+
+            # Sync default signature with config.json
+            def_sig = next((s for s in sigs if s.get("is_default")), sigs[0])
+            save_config({"email_signature": def_sig.get("content", "")})
+
+            self.send_json({
+                "success": True,
+                "message": f"Signature « {name} » enregistrée avec succès !",
+                "signature": sig_entry,
+                "signatures": sigs
+            })
+            return
+
+        elif path == "/api/signatures/set-default":
+            sig_id = str(data.get("id", ""))
+            sigs = load_signatures()
+            target = next((s for s in sigs if str(s.get("id")) == sig_id), None)
+            if not target:
+                self.send_json({"success": False, "message": "Signature introuvable."})
+                return
+
+            for s in sigs:
+                s["is_default"] = (str(s.get("id")) == sig_id)
+
+            save_signatures(sigs)
+            save_config({"email_signature": target.get("content", "")})
+
+            self.send_json({
+                "success": True,
+                "message": f"« {target.get('name')} » est désormais la signature par défaut.",
+                "signatures": sigs
+            })
+            return
+
+        elif path == "/api/signatures/delete":
+            sig_id = str(data.get("id", ""))
+            sigs = load_signatures()
+            target = next((s for s in sigs if str(s.get("id")) == sig_id), None)
+            if not target:
+                self.send_json({"success": False, "message": "Signature introuvable."})
+                return
+
+            if len(sigs) <= 1:
+                self.send_json({"success": False, "message": "Impossible de supprimer la seule signature restante."})
+                return
+
+            was_default = target.get("is_default", False)
+            sigs = [s for s in sigs if str(s.get("id")) != sig_id]
+            if was_default and sigs:
+                sigs[0]["is_default"] = True
+                save_config({"email_signature": sigs[0].get("content", "")})
+
+            save_signatures(sigs)
+            self.send_json({
+                "success": True,
+                "message": f"Signature « {target.get('name')} » supprimée.",
+                "signatures": sigs
+            })
             return
 
         self.send_error(404, "Endpoint non trouvé")

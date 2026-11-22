@@ -305,15 +305,33 @@
                 placeholder="Bonjour,&#10;&#10;Nous avons le plaisir de vous contacter..."
                 class="w-full text-sm font-sans p-3.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition custom-scroll resize-y bg-slate-50/20"></textarea>
 
-              <!-- Signature inclusion toggle in composer -->
-              <div class="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200 mt-2">
-                <label class="flex items-center space-x-2.5 cursor-pointer text-xs font-semibold text-slate-700 select-none">
-                  <input type="checkbox" id="chk-include-signature" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 transition" checked>
-                  <span>✒️ Inclure ma signature d'email à la fin</span>
-                </label>
-                <button type="button" onclick="switchTab('settings')" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-bold underline">
-                  Gérer ma signature
-                </button>
+              <!-- Signature inclusion and selector in composer -->
+              <div class="flex flex-wrap items-center justify-between gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 mt-2">
+                <div class="flex items-center space-x-2.5 min-w-0">
+                  <label class="flex items-center space-x-2 cursor-pointer text-xs font-semibold text-slate-700 select-none flex-shrink-0">
+                    <input type="checkbox" id="chk-include-signature" onchange="onSignatureToggleChange()" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 transition cursor-pointer" checked>
+                    <span>✒️ Signature :</span>
+                  </label>
+                  <div class="relative inline-block max-w-[210px] sm:max-w-[280px]">
+                    <select 
+                      id="composer-signature-select" 
+                      onchange="onComposerSignatureChange(this.value)" 
+                      class="w-full text-xs font-semibold py-1 pl-2.5 pr-7 bg-white border border-slate-300 rounded-lg text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm appearance-none cursor-pointer truncate">
+                      <!-- Dynamically filled with saved signatures -->
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-1.5 text-slate-400">
+                      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                  </div>
+                </div>
+                <div class="flex items-center space-x-1.5 flex-shrink-0">
+                  <button 
+                    type="button" 
+                    onclick="openManageSignaturesModal()" 
+                    class="text-[11px] px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold border border-indigo-200 transition cursor-pointer flex items-center space-x-1 shadow-sm">
+                    <span>⚙️ Mes signatures</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -637,28 +655,40 @@
             <div class="flex items-center justify-between">
               <div>
                 <label class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
-                  <span>✒️ Signature de l'expéditeur</span>
+                  <span>✒️ Signatures d'email</span>
                 </label>
-                <p class="text-[11px] text-slate-500">S'ajoute automatiquement à la fin de tous vos emails.</p>
+                <p class="text-[11px] text-slate-500">Gérez plusieurs signatures professionnelles et personnalisez celle par défaut.</p>
               </div>
               <div class="flex items-center space-x-2">
-                <button type="button" onclick="insertSignatureTemplate()" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-bold underline">
-                  + Exemple EPIK
-                </button>
-                <button type="button" onclick="toggleSignatureMode()" id="btn-sig-mode" class="text-[11px] text-slate-600 hover:text-slate-900 font-semibold px-2 py-0.5 rounded bg-slate-100 border border-slate-200">
-                  Mode HTML
+                <button type="button" onclick="openManageSignaturesModal()" class="text-xs px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold border border-indigo-200 transition shadow-sm cursor-pointer flex items-center space-x-1">
+                  <span>⚙️ Gérer mes signatures</span>
                 </button>
               </div>
             </div>
 
             <div class="flex items-center space-x-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-              <input type="checkbox" id="cfg-include-signature" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300" checked>
+              <input type="checkbox" id="cfg-include-signature" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer" checked>
               <label for="cfg-include-signature" class="text-xs font-semibold text-slate-700 cursor-pointer select-none">
-                Activer et inclure automatiquement cette signature
+                Activer et inclure automatiquement la signature par défaut
               </label>
             </div>
 
-            <div class="space-y-2">
+            <div class="p-3 bg-white rounded-xl border border-slate-200 shadow-sm space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+                  <span>⭐ Signature par défaut :</span>
+                  <span id="cfg-default-sig-name" class="text-indigo-600 font-bold">Signature Actuelle</span>
+                </span>
+                <div class="flex items-center space-x-2">
+                  <button type="button" onclick="insertSignatureTemplate()" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-bold underline cursor-pointer">
+                    + Exemple EPIK
+                  </button>
+                  <button type="button" onclick="toggleSignatureMode()" id="btn-sig-mode" class="text-[11px] text-slate-600 hover:text-slate-900 font-semibold px-2 py-0.5 rounded bg-slate-100 border border-slate-200 cursor-pointer">
+                    Mode HTML
+                  </button>
+                </div>
+              </div>
+
               <!-- Visual ContentEditable Editor where they can paste formatted signature from Gmail -->
               <div 
                 id="cfg-signature-editor" 
@@ -675,11 +705,10 @@
 
               <div class="p-3 bg-indigo-50/70 rounded-xl border border-indigo-100 text-[11px] text-indigo-900 space-y-1">
                 <p class="font-bold flex items-center space-x-1">
-                  <span>💡 Comment copier votre signature déjà présente dans Gmail :</span>
+                  <span>💡 Astuce Gmail :</span>
                 </p>
-                <p>1. Ouvrez <b>Gmail</b> ➡️ cliquez sur la roue dentée <b>Paramètres (⚙️)</b> en haut à droite ➡️ <b>Voir tous les paramètres</b>.</p>
-                <p>2. Dans l'onglet <b>Général</b>, descendez jusqu'à <b>Signature</b>.</p>
-                <p>3. Sélectionnez votre signature avec la souris, faites <b>Ctrl + C</b> (copier), puis cliquez dans la case blanche ci-dessus et faites <b>Ctrl + V</b> (coller) ! Vos textes, couleurs, logos et liens seront conservés.</p>
+                <p>1. Ouvrez <b>Gmail</b> ➡️ <b>Paramètres (⚙️)</b> ➡️ <b>Voir tous les paramètres</b> ➡️ onglet <b>Général</b> ➡️ <b>Signature</b>.</p>
+                <p>2. Sélectionnez votre signature avec la souris, faites <b>Ctrl + C</b> (copier), puis cliquez dans la case ci-dessus et faites <b>Ctrl + V</b> (coller) ! Vos textes, couleurs, logos et liens seront conservés.</p>
               </div>
             </div>
           </div>
@@ -1186,6 +1215,143 @@
     </div>
   </div>
 
+  <!-- MODAL: GESTIONNAIRE DE SIGNATURES MULTIPLES -->
+  <div id="modal-manage-signatures" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-8 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <h3 class="font-bold text-slate-900 text-base sm:text-lg flex items-center space-x-2">
+            <span>✒️ Mes Signatures d'Emails</span>
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">Créez plusieurs signatures (EPIK Club, RH, Personnelle) et choisissez celle à insérer en 1 clic.</p>
+        </div>
+        <button onclick="closeManageSignaturesModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1 leading-none cursor-pointer">&times;</button>
+      </div>
+
+      <div class="flex items-center justify-between p-3 rounded-xl bg-indigo-50/70 border border-indigo-100">
+        <div>
+          <h4 class="text-xs font-bold text-indigo-950">Créer une nouvelle signature</h4>
+          <p class="text-[11px] text-indigo-700">Personnalisez votre texte, vos coordonnées, liens et mise en page.</p>
+        </div>
+        <button 
+          type="button" 
+          onclick="openCreateSignatureModal()" 
+          class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition flex items-center space-x-1 flex-shrink-0 cursor-pointer">
+          <span>+ Nouvelle signature</span>
+        </button>
+      </div>
+
+      <!-- Container of all saved signatures -->
+      <div id="saved-signatures-modal-container" class="space-y-3 max-h-[50vh] overflow-y-auto custom-scroll pr-1">
+        <!-- Dynamically filled by JS -->
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+        <span class="text-[11px] text-slate-400">💡 La signature par défaut est automatiquement cochée lors de vos envois.</span>
+        <button onclick="closeManageSignaturesModal()" class="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition cursor-pointer">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CRÉER / MODIFIER UNE SIGNATURE -->
+  <div id="modal-edit-signature" class="hidden fixed inset-0 z-55 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-8 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <h3 id="sig-modal-title" class="font-bold text-slate-900 text-base sm:text-lg flex items-center space-x-2">
+            <span>✍️ Nouvelle Signature</span>
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">Donnez un nom et concevez le style visuel de votre signature.</p>
+        </div>
+        <button onclick="closeEditSignatureModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1 leading-none cursor-pointer">&times;</button>
+      </div>
+
+      <div class="space-y-3">
+        <input type="hidden" id="sig-edit-id" value="">
+        <div>
+          <label for="sig-edit-name" class="block text-xs font-semibold text-slate-700 mb-1">Nom de la signature * :</label>
+          <input 
+            type="text" 
+            id="sig-edit-name" 
+            placeholder="Ex: Signature EPIK Club, Signature RH, Personnelle" 
+            class="w-full text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none">
+        </div>
+
+        <div class="flex items-center space-x-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+          <input type="checkbox" id="sig-edit-is-default" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 cursor-pointer">
+          <label for="sig-edit-is-default" class="text-xs font-semibold text-slate-700 cursor-pointer select-none">
+            ⭐ Définir comme signature par défaut
+          </label>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-semibold text-slate-700">Contenu de la signature * :</label>
+            <div class="flex items-center space-x-2">
+              <button type="button" onclick="toggleModalSigMode()" id="btn-modal-sig-mode" class="text-[11px] text-slate-600 hover:text-slate-900 font-semibold px-2 py-0.5 rounded bg-slate-100 border border-slate-200 cursor-pointer">
+                Mode HTML
+              </button>
+            </div>
+          </div>
+
+          <!-- Quick Templates Bar -->
+          <div class="flex items-center space-x-1.5 mb-2 overflow-x-auto pb-1 custom-scroll">
+            <span class="text-[10px] text-slate-400 font-semibold whitespace-nowrap">Modèles rapides :</span>
+            <button type="button" onclick="insertModalSigPreset('epik')" class="text-[10px] font-bold px-2 py-1 rounded bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 whitespace-nowrap cursor-pointer">
+              + EPIK Club
+            </button>
+            <button type="button" onclick="insertModalSigPreset('rh')" class="text-[10px] font-bold px-2 py-1 rounded bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 whitespace-nowrap cursor-pointer">
+              + Pôle RH
+            </button>
+            <button type="button" onclick="insertModalSigPreset('minimal')" class="text-[10px] font-bold px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 whitespace-nowrap cursor-pointer">
+              + Minimaliste
+            </button>
+          </div>
+
+          <!-- Visual Editor -->
+          <div 
+            id="sig-edit-editor" 
+            contenteditable="true" 
+            oninput="updateModalSigPreview()" 
+            class="w-full min-h-[110px] max-h-[200px] p-3 rounded-xl border border-slate-200 bg-white overflow-y-auto text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition custom-scroll"
+            placeholder="Tapez ou collez votre signature ici (Ctrl+V depuis Gmail)..."></div>
+
+          <!-- Raw HTML Textarea -->
+          <textarea 
+            id="sig-edit-raw" 
+            rows="6" 
+            oninput="updateModalSigPreview()" 
+            class="hidden w-full text-xs font-mono p-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition bg-slate-50/50"
+            placeholder="Code HTML de votre signature..."></textarea>
+        </div>
+
+        <!-- Live Preview of edited signature -->
+        <div>
+          <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Aperçu en direct :</label>
+          <div id="sig-edit-preview" class="p-3 rounded-xl border border-dashed border-slate-300 bg-slate-50/60 max-h-[140px] overflow-y-auto text-xs custom-scroll">
+            <span class="text-slate-400 italic">Aperçu vide...</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+        <button 
+          type="button" 
+          onclick="closeEditSignatureModal()" 
+          class="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition cursor-pointer">
+          Annuler
+        </button>
+        <button 
+          type="button" 
+          id="btn-submit-signature" 
+          onclick="submitSignatureForm()" 
+          class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition cursor-pointer">
+          Enregistrer la signature
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: TESTEUR ANTI-SPAM ET SCORE DE DÉLIVRABILITÉ (Option 2) -->
   <div id="modal-spam-score" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-8 space-y-4">
@@ -1297,11 +1463,15 @@
     let savedContactLists = [];
     let scheduledTasksList = [];
     let savedCustomTemplates = [];
+    let savedSignatures = [];
+    let activeSignatureId = null;
+    let isModalSigHtmlMode = false;
     let currentScheduleMode = 'now'; // 'now' or 'later'
 
     // Initialisation
     document.addEventListener("DOMContentLoaded", () => {
       fetchConfig();
+      fetchSignatures();
       fetchContactLists();
       fetchScheduledTasks();
       fetchCustomTemplates();
@@ -1524,6 +1694,17 @@
           document.getElementById("chk-include-signature").checked = incSig;
         }
 
+        if (savedConfig.signatures && savedConfig.signatures.length > 0) {
+          savedSignatures = savedConfig.signatures;
+          const defSig = savedSignatures.find(s => s.is_default) || savedSignatures[0];
+          if (!activeSignatureId && defSig) {
+            activeSignatureId = defSig.id;
+          }
+          renderComposerSignatures();
+          renderSignaturesModal();
+          updateSettingsDefaultSignatureDisplay();
+        }
+
         const warn = document.getElementById("unconfigured-warning");
         const isBrevoConfigured = prov === "brevo" && savedConfig.sender_email && savedConfig.has_brevo_key;
         const isGmailConfigured = prov === "gmail" && savedConfig.sender_email && savedConfig.has_password;
@@ -1574,6 +1755,7 @@
         if (data.success) {
           alert("✅ " + data.message);
           fetchConfig();
+          fetchSignatures();
           switchTab('sender');
         } else {
           alert("Erreur: " + data.message);
@@ -1909,8 +2091,7 @@
         rawContent = rawContent.replace(/{date}/g, new Date().toLocaleDateString('fr-FR'));
 
         const includeSig = document.getElementById("chk-include-signature") ? document.getElementById("chk-include-signature").checked : true;
-        const sigEditor = document.getElementById("cfg-signature-editor");
-        let sigContent = sigEditor ? sigEditor.innerHTML.trim() : (savedConfig.email_signature || "");
+        let sigContent = getActiveSignatureContent();
         if (sigContent === "<br>" || sigContent === "<p></p>") sigContent = "";
 
         let previewHtml = (contactBadge || "") + (rawContent || "<p class='text-slate-400 italic'>Corps de l'email vide...</p>");
@@ -2023,8 +2204,7 @@
       btn.textContent = "Envoi du test...";
 
       const includeSig = document.getElementById("chk-include-signature") ? document.getElementById("chk-include-signature").checked : true;
-      const sigEditor = document.getElementById("cfg-signature-editor");
-      let signature = sigEditor ? sigEditor.innerHTML.trim() : (savedConfig.email_signature || "");
+      let signature = getActiveSignatureContent();
       if (signature === "<br>" || signature === "<p></p>") signature = "";
 
       try {
@@ -2096,8 +2276,7 @@
       const estMin = (estSeconds / 60).toFixed(1);
 
       const includeSig = document.getElementById("chk-include-signature") ? document.getElementById("chk-include-signature").checked : true;
-      const sigEditor = document.getElementById("cfg-signature-editor");
-      let signature = sigEditor ? sigEditor.innerHTML.trim() : (savedConfig.email_signature || "");
+      let signature = getActiveSignatureContent();
       if (signature === "<br>" || signature === "<p></p>") signature = "";
 
       if (currentScheduleMode === 'later') {
@@ -2775,6 +2954,420 @@
     }
 
     // ===============================================================
+    // GESTIONNAIRE DE SIGNATURES MULTIPLES
+    // ===============================================================
+    async function fetchSignatures() {
+      try {
+        const res = await fetch("/api/signatures");
+        const data = await res.json();
+        savedSignatures = data.signatures || [];
+        
+        const defSig = savedSignatures.find(s => s.is_default) || savedSignatures[0];
+        if (!activeSignatureId && defSig) {
+          activeSignatureId = defSig.id;
+        } else if (activeSignatureId && !savedSignatures.some(s => String(s.id) === String(activeSignatureId))) {
+          activeSignatureId = defSig ? defSig.id : null;
+        }
+        
+        renderComposerSignatures();
+        renderSignaturesModal();
+        updateSettingsDefaultSignatureDisplay();
+      } catch (e) {
+        console.error("Erreur chargement signatures:", e);
+      }
+    }
+
+    function renderComposerSignatures() {
+      const select = document.getElementById("composer-signature-select");
+      if (!select) return;
+
+      if (savedSignatures.length === 0) {
+        select.innerHTML = `<option value="">(Aucune signature)</option>`;
+        return;
+      }
+
+      select.innerHTML = savedSignatures.map(sig => {
+        const isDef = sig.is_default ? " ⭐" : "";
+        const isSel = String(sig.id) === String(activeSignatureId) ? "selected" : "";
+        return `<option value="${sig.id}" ${isSel}>${sig.name}${isDef}</option>`;
+      }).join("");
+
+      if (select.value) {
+        activeSignatureId = select.value;
+      }
+    }
+
+    function onComposerSignatureChange(sigId) {
+      activeSignatureId = sigId;
+      const previewContainer = document.getElementById("body-preview-container");
+      if (previewContainer && !previewContainer.classList.contains("hidden")) {
+        setBodyView('preview');
+      }
+    }
+
+    function onSignatureToggleChange() {
+      const chkComposer = document.getElementById("chk-include-signature");
+      const chkSettings = document.getElementById("cfg-include-signature");
+      if (chkComposer && chkSettings) {
+        chkSettings.checked = chkComposer.checked;
+      }
+      const previewContainer = document.getElementById("body-preview-container");
+      if (previewContainer && !previewContainer.classList.contains("hidden")) {
+        setBodyView('preview');
+      }
+    }
+
+    function getActiveSignatureContent() {
+      if (savedSignatures.length === 0) {
+        return savedConfig.email_signature || "";
+      }
+      const current = savedSignatures.find(s => String(s.id) === String(activeSignatureId));
+      if (current && current.content) return current.content;
+      const def = savedSignatures.find(s => s.is_default);
+      if (def && def.content) return def.content;
+      return savedSignatures[0].content || "";
+    }
+
+    function updateSettingsDefaultSignatureDisplay() {
+      const def = savedSignatures.find(s => s.is_default) || savedSignatures[0];
+      const nameEl = document.getElementById("cfg-default-sig-name");
+      const editor = document.getElementById("cfg-signature-editor");
+      const textarea = document.getElementById("cfg-signature");
+      if (def) {
+        if (nameEl) nameEl.textContent = def.name;
+        if (editor && !isSigHtmlMode) editor.innerHTML = def.content;
+        if (textarea) textarea.value = def.content;
+      }
+    }
+
+    function openManageSignaturesModal() {
+      renderSignaturesModal();
+      document.getElementById("modal-manage-signatures").classList.remove("hidden");
+    }
+
+    function closeManageSignaturesModal() {
+      document.getElementById("modal-manage-signatures").classList.add("hidden");
+    }
+
+    function renderSignaturesModal() {
+      const container = document.getElementById("saved-signatures-modal-container");
+      if (!container) return;
+
+      if (savedSignatures.length === 0) {
+        container.innerHTML = `
+          <div class="p-6 text-center text-slate-400 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
+            <span class="text-2xl block">✒️</span>
+            <p class="text-xs font-semibold text-slate-600">Aucune signature enregistrée</p>
+            <p class="text-[11px] text-slate-400">Cliquez sur « + Nouvelle signature » pour créer votre première signature.</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = savedSignatures.map(sig => {
+        const isDef = !!sig.is_default;
+        const isChosenForSend = String(sig.id) === String(activeSignatureId);
+        return `
+          <div class="p-3.5 rounded-xl border ${isDef ? 'border-indigo-300 bg-indigo-50/20 shadow-sm' : 'border-slate-200 bg-white'} transition space-y-2.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-2">
+                <span class="text-base">${isDef ? '⭐' : '✒️'}</span>
+                <span class="text-xs font-bold text-slate-900">${sig.name}</span>
+                ${isDef ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-700 border border-indigo-200">Par défaut</span>' : ''}
+                ${isChosenForSend ? '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">Active dans l\'envoi</span>' : ''}
+              </div>
+              <div class="flex items-center space-x-1.5">
+                ${!isDef ? `
+                  <button 
+                    type="button" 
+                    onclick="setDefaultSignature('${sig.id}')" 
+                    class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white border border-slate-200 hover:border-indigo-300 hover:text-indigo-600 text-slate-700 transition cursor-pointer shadow-sm flex items-center space-x-1">
+                    <span>⭐ Définir par défaut</span>
+                  </button>
+                ` : ''}
+                <button 
+                  type="button" 
+                  onclick="editSignatureModal('${sig.id}')" 
+                  class="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 transition cursor-pointer shadow-sm flex items-center space-x-1">
+                  <span>✏️ Modifier</span>
+                </button>
+                ${savedSignatures.length > 1 ? `
+                  <button 
+                    type="button" 
+                    onclick="deleteSignature('${sig.id}')" 
+                    class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer" 
+                    title="Supprimer">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+
+            <!-- Preview box -->
+            <div class="p-3 rounded-lg bg-slate-50 border border-slate-100 text-xs overflow-x-auto max-h-[140px] custom-scroll">
+              ${sig.content}
+            </div>
+
+            <div class="flex items-center justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-100">
+              <span>Modifié le ${sig.updated_at || sig.created_at || 'récemment'}</span>
+              <button type="button" onclick="selectSignatureForComposer('${sig.id}')" class="text-indigo-600 hover:text-indigo-800 font-bold hover:underline cursor-pointer">
+                👉 Choisir pour l'envoi en cours
+              </button>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function selectSignatureForComposer(sigId) {
+      activeSignatureId = sigId;
+      renderComposerSignatures();
+      closeManageSignaturesModal();
+      switchTab('sender');
+      const previewContainer = document.getElementById("body-preview-container");
+      if (previewContainer && !previewContainer.classList.contains("hidden")) {
+        setBodyView('preview');
+      }
+    }
+
+    function openCreateSignatureModal() {
+      document.getElementById("sig-modal-title").innerHTML = `<span>✍️ Nouvelle Signature</span>`;
+      document.getElementById("sig-edit-id").value = "";
+      document.getElementById("sig-edit-name").value = "";
+      document.getElementById("sig-edit-is-default").checked = savedSignatures.length === 0;
+
+      const editor = document.getElementById("sig-edit-editor");
+      const raw = document.getElementById("sig-edit-raw");
+      editor.innerHTML = "";
+      raw.value = "";
+      
+      isModalSigHtmlMode = false;
+      editor.classList.remove("hidden");
+      raw.classList.add("hidden");
+      const btn = document.getElementById("btn-modal-sig-mode");
+      btn.textContent = "Mode HTML";
+      btn.classList.remove("bg-indigo-100", "text-indigo-700");
+
+      insertModalSigPreset('epik');
+      updateModalSigPreview();
+
+      document.getElementById("modal-edit-signature").classList.remove("hidden");
+    }
+
+    function editSignatureModal(sigId) {
+      const sig = savedSignatures.find(s => String(s.id) === String(sigId));
+      if (!sig) return;
+
+      document.getElementById("sig-modal-title").innerHTML = `<span>✏️ Modifier la Signature</span>`;
+      document.getElementById("sig-edit-id").value = sig.id;
+      document.getElementById("sig-edit-name").value = sig.name;
+      document.getElementById("sig-edit-is-default").checked = !!sig.is_default;
+
+      const editor = document.getElementById("sig-edit-editor");
+      const raw = document.getElementById("sig-edit-raw");
+      editor.innerHTML = sig.content || "";
+      raw.value = sig.content || "";
+
+      isModalSigHtmlMode = false;
+      editor.classList.remove("hidden");
+      raw.classList.add("hidden");
+      const btn = document.getElementById("btn-modal-sig-mode");
+      btn.textContent = "Mode HTML";
+      btn.classList.remove("bg-indigo-100", "text-indigo-700");
+
+      updateModalSigPreview();
+      document.getElementById("modal-edit-signature").classList.remove("hidden");
+    }
+
+    function closeEditSignatureModal() {
+      document.getElementById("modal-edit-signature").classList.add("hidden");
+    }
+
+    function toggleModalSigMode() {
+      const editor = document.getElementById("sig-edit-editor");
+      const raw = document.getElementById("sig-edit-raw");
+      const btn = document.getElementById("btn-modal-sig-mode");
+
+      if (!isModalSigHtmlMode) {
+        raw.value = editor.innerHTML;
+        editor.classList.add("hidden");
+        raw.classList.remove("hidden");
+        btn.textContent = "Mode Visuel";
+        btn.classList.add("bg-indigo-100", "text-indigo-700");
+        isModalSigHtmlMode = true;
+      } else {
+        editor.innerHTML = raw.value;
+        raw.classList.add("hidden");
+        editor.classList.remove("hidden");
+        btn.textContent = "Mode HTML";
+        btn.classList.remove("bg-indigo-100", "text-indigo-700");
+        isModalSigHtmlMode = false;
+      }
+      updateModalSigPreview();
+    }
+
+    function updateModalSigPreview() {
+      const editor = document.getElementById("sig-edit-editor");
+      const raw = document.getElementById("sig-edit-raw");
+      const preview = document.getElementById("sig-edit-preview");
+      const content = isModalSigHtmlMode ? raw.value.trim() : editor.innerHTML.trim();
+      if (!content || content === "<br>" || content === "<p></p>") {
+        preview.innerHTML = `<span class="text-slate-400 italic">Aperçu vide...</span>`;
+      } else {
+        preview.innerHTML = content;
+      }
+    }
+
+    function insertModalSigPreset(type) {
+      const senderName = (document.getElementById("cfg-sender-name") ? document.getElementById("cfg-sender-name").value.trim() : "") || "Mohamed Ali Mseddi";
+      const senderEmail = (document.getElementById("cfg-sender-email") ? document.getElementById("cfg-sender-email").value.trim() : "") || "contact@epikclub.com";
+
+      let tpl = "";
+      if (type === 'epik') {
+        tpl = `<div style="font-family: Arial, sans-serif; font-size: 13px; color: #334155; line-height: 1.5; border-top: 2px solid #6366f1; padding-top: 10px; margin-top: 15px;">
+  <p style="margin: 0; font-size: 15px; font-weight: bold; color: #1e293b;">${senderName}</p>
+  <p style="margin: 2px 0 6px 0; color: #6366f1; font-weight: 600;">Responsable Partenariats & RH | EPIK Club</p>
+  <p style="margin: 0; color: #64748b; font-size: 12px;">📞 +216 00 000 000 | ✉️ ${senderEmail}</p>
+  <p style="margin: 2px 0 0 0; color: #64748b; font-size: 12px;">🌐 <a href="https://epikclub.com" style="color: #6366f1; text-decoration: none; font-weight: 500;">epikclub.com</a> | 📍 ISIMS Sfax, Tunisie</p>
+</div>`;
+      } else if (type === 'rh') {
+        tpl = `<div style="font-family: Arial, sans-serif; font-size: 13px; color: #1e293b; line-height: 1.5; border-left: 3px solid #0284c7; padding-left: 12px; margin-top: 15px;">
+  <p style="margin: 0; font-weight: bold; font-size: 14px; color: #0f172a;">${senderName}</p>
+  <p style="margin: 2px 0; color: #0284c7; font-weight: 600; font-size: 12px;">Pôle Recrutement & Relations Entreprises</p>
+  <p style="margin: 4px 0 0 0; color: #64748b; font-size: 11px;">✉️ ${senderEmail} | 🌐 <a href="https://epikclub.com" style="color: #0284c7; text-decoration: none;">epikclub.com</a></p>
+</div>`;
+      } else {
+        tpl = `<p style="font-family: Arial, sans-serif; font-size: 13px; color: #475569; margin: 15px 0 0 0; line-height: 1.4;">
+  Bien cordialement,<br>
+  <strong style="color: #0f172a;">${senderName}</strong><br>
+  <span style="font-size: 11px; color: #94a3b8;">Envoyé via MailStorm</span>
+</p>`;
+      }
+
+      const editor = document.getElementById("sig-edit-editor");
+      const raw = document.getElementById("sig-edit-raw");
+      if (editor) editor.innerHTML = tpl;
+      if (raw) raw.value = tpl;
+      updateModalSigPreview();
+    }
+
+    async function submitSignatureForm() {
+      const id = document.getElementById("sig-edit-id").value;
+      const name = document.getElementById("sig-edit-name").value.trim();
+      const isDefault = document.getElementById("sig-edit-is-default").checked;
+      const editor = document.getElementById("sig-edit-editor");
+      const raw = document.getElementById("sig-edit-raw");
+      
+      let content = isModalSigHtmlMode ? raw.value.trim() : editor.innerHTML.trim();
+      if (content === "<br>" || content === "<p></p>") content = "";
+
+      if (!name) {
+        alert("Veuillez donner un nom à votre signature (ex: Signature EPIK).");
+        document.getElementById("sig-edit-name").focus();
+        return;
+      }
+      if (!content) {
+        alert("Le contenu de la signature ne peut pas être vide.");
+        return;
+      }
+
+      const btn = document.getElementById("btn-submit-signature");
+      btn.disabled = true;
+      btn.textContent = "Enregistrement...";
+
+      try {
+        const res = await fetch("/api/signatures/save", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: id,
+            name: name,
+            content: content,
+            is_default: isDefault
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          savedSignatures = data.signatures || [];
+          if (data.signature) {
+            activeSignatureId = data.signature.id;
+          }
+          renderComposerSignatures();
+          renderSignaturesModal();
+          updateSettingsDefaultSignatureDisplay();
+          closeEditSignatureModal();
+          const previewContainer = document.getElementById("body-preview-container");
+          if (previewContainer && !previewContainer.classList.contains("hidden")) {
+            setBodyView('preview');
+          }
+        } else {
+          alert("Erreur: " + data.message);
+        }
+      } catch (e) {
+        alert("Erreur lors de la sauvegarde: " + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Enregistrer la signature";
+      }
+    }
+
+    async function setDefaultSignature(sigId) {
+      try {
+        const res = await fetch("/api/signatures/set-default", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: sigId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          savedSignatures = data.signatures || [];
+          renderComposerSignatures();
+          renderSignaturesModal();
+          updateSettingsDefaultSignatureDisplay();
+        } else {
+          alert("Erreur: " + data.message);
+        }
+      } catch (e) {
+        alert("Erreur: " + e.message);
+      }
+    }
+
+    async function deleteSignature(sigId) {
+      const target = savedSignatures.find(s => String(s.id) === String(sigId));
+      const name = target ? target.name : "cette signature";
+      if (!confirm(`Êtes-vous sûr de vouloir supprimer la signature « ${name} » ?`)) {
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/signatures/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: sigId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          savedSignatures = data.signatures || [];
+          if (String(activeSignatureId) === String(sigId)) {
+            const def = savedSignatures.find(s => s.is_default) || savedSignatures[0];
+            activeSignatureId = def ? def.id : null;
+          }
+          renderComposerSignatures();
+          renderSignaturesModal();
+          updateSettingsDefaultSignatureDisplay();
+          const previewContainer = document.getElementById("body-preview-container");
+          if (previewContainer && !previewContainer.classList.contains("hidden")) {
+            setBodyView('preview');
+          }
+        } else {
+          alert("Erreur: " + data.message);
+        }
+      } catch (e) {
+        alert("Erreur lors de la suppression: " + e.message);
+      }
+    }
+
+    // ===============================================================
     // OPTION 1: GESTIONNAIRE DE LISTES DE CONTACTS ET GROUPES
     // ===============================================================
     async function fetchContactLists() {
@@ -2976,8 +3569,7 @@
       const btn = document.getElementById("btn-anti-spam");
 
       const includeSig = document.getElementById("chk-include-signature") ? document.getElementById("chk-include-signature").checked : true;
-      const sigEditor = document.getElementById("cfg-signature-editor");
-      let signature = sigEditor ? sigEditor.innerHTML.trim() : (savedConfig.email_signature || "");
+      let signature = getActiveSignatureContent();
       if (signature === "<br>" || signature === "<p></p>") signature = "";
 
       btn.disabled = true;
