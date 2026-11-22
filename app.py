@@ -414,6 +414,10 @@ def send_single_email_brevo(api_key, sender_email, sender_name, recipient, subje
             "name": sender_name or sender_email,
             "email": sender_email
         },
+        "replyTo": {
+            "name": sender_name or sender_email,
+            "email": sender_email
+        },
         "to": [
             {"email": recipient}
         ],
