@@ -14,6 +14,7 @@ import re
 import threading
 import webbrowser
 import base64
+import io
 import uuid
 import urllib.request
 import urllib.error
@@ -32,6 +33,13 @@ LISTS_FILE = os.path.join(os.path.dirname(__file__), "contact_lists.json")
 SCHEDULED_FILE = os.path.join(os.path.dirname(__file__), "scheduled_tasks.json")
 TEMPLATES_FILE = os.path.join(os.path.dirname(__file__), "custom_templates.json")
 SIGNATURES_FILE = os.path.join(os.path.dirname(__file__), "signatures.json")
+CERTIFICATE_CONFIG_FILE = os.path.join(os.path.dirname(__file__), "certificate_config.json")
+
+try:
+    from PIL import Image, ImageDraw, ImageFont
+    HAS_PIL = True
+except ImportError:
+    HAS_PIL = False
 
 # État global de l'envoi en cours
 campaign_state = {
@@ -201,6 +209,285 @@ def load_signatures():
 
     save_signatures(default_sigs)
     return default_sigs
+
+def load_certificate_config():
+    if os.path.exists(CERTIFICATE_CONFIG_FILE):
+        try:
+            with open(CERTIFICATE_CONFIG_FILE, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {
+        "enabled": False,
+        "template_type": "prestige",
+        "output_format": "pdf",
+        "name_var": "",
+        "event_title": "Formation Développement Web & IA 2026",
+        "subtitle": "En reconnaissance de sa participation active et de son investissement remarquable.",
+        "issuer_name": "EPIK ISIMS Club",
+        "date_str": "",
+        "font_color": "#0f172a",
+        "font_size": 48,
+        "name_y_pct": 48,
+        "custom_bg_base64": "",
+        "filename_pattern": "Certificat_{Nom}.pdf"
+    }
+
+def save_certificate_config(cfg):
+    try:
+        with open(CERTIFICATE_CONFIG_FILE, "w", encoding="utf-8") as f:
+            json.dump(cfg, f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"Erreur sauvegarde config certificat: {e}")
+
+def get_best_font(preferred_style="serif", size=36):
+    if not HAS_PIL:
+        return None
+    serif_candidates = [
+        "C:/Windows/Fonts/georgia.ttf",
+        "C:/Windows/Fonts/times.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSerif.ttf"
+    ]
+    sans_candidates = [
+        "C:/Windows/Fonts/arial.ttf",
+        "C:/Windows/Fonts/calibri.ttf",
+        "C:/Windows/Fonts/segoeui.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+    ]
+    candidates = serif_candidates if preferred_style == "serif" else sans_candidates
+    candidates = candidates + sans_candidates + serif_candidates
+
+    for path in candidates:
+        if os.path.exists(path):
+            try:
+                return ImageFont.truetype(path, size)
+            except Exception:
+                continue
+    try:
+        return ImageFont.load_default()
+    except Exception:
+        return None
+
+def extract_recipient_name(email, data=None, name_var=""):
+    """
+    Extrait intelligemment le nom du destinataire :
+    1. Si l'utilisateur a spécifié une variable (ex: '{Prénom} {Nom}')
+    2. Sinon, cherche dans les colonnes standard du fichier Excel/CSV
+    3. En dernier recours, reconstruit un nom propre à partir du préfixe email (ex: 'ahmed.benali@gmail.com' -> 'Ahmed Benali')
+    """
+    if data and name_var:
+        res = name_var
+        for k, v in data.items():
+            pattern = re.compile(re.escape("{" + str(k).strip() + "}"), re.IGNORECASE)
+            res = pattern.sub(str(v or "").strip(), res)
+        res = res.strip()
+        if res:
+            return res
+
+    if data and isinstance(data, dict):
+        for candidate_key in ["Nom_Complet", "Nom Complet", "Nom et Prénom", "Full Name", "FullName", "Participant", "Nom_Participant", "Name"]:
+            for k in data.keys():
+                if k.strip().lower() == candidate_key.lower():
+                    val = str(data[k] or "").strip()
+                    if val:
+                        return val
+
+        prenom = ""
+        nom = ""
+        for k in data.keys():
+            kl = k.strip().lower()
+            if kl in ("prenom", "prénom", "first name", "firstname"):
+                prenom = str(data[k] or "").strip()
+            elif kl in ("nom", "last name", "lastname"):
+                nom = str(data[k] or "").strip()
+        if prenom and nom:
+            return f"{prenom} {nom}"
+        elif nom:
+            return nom
+        elif prenom:
+            return prenom
+
+    prefix = email.split("@")[0] if "@" in email else email
+    parts = re.split(r"[._\-+]+", prefix)
+    words = []
+    for p in parts:
+        clean = re.sub(r"\d+", "", p).strip()
+        if len(clean) >= 2:
+            words.append(clean.capitalize())
+    if words:
+        return " ".join(words)
+    return prefix.capitalize()
+
+def generate_certificate_attachment(recipient_name, cert_config, recipient_data=None, recipient_email=""):
+    """
+    Génère un certificat personnalisé haute définition (PDF ou PNG)
+    prêt à être envoyé comme pièce jointe.
+    """
+    if not HAS_PIL:
+        raise RuntimeError("La bibliothèque Pillow (PIL) est requise pour générer des certificats.")
+
+    width = 1200
+    height = 850
+
+    template_type = cert_config.get("template_type", "prestige")
+    output_format = (cert_config.get("output_format") or "pdf").lower()
+    event_title = cert_config.get("event_title") or "Formation Développement Web & IA 2026"
+    subtitle = cert_config.get("subtitle") or "En reconnaissance de sa participation active et de son investissement remarquable."
+    issuer_name = cert_config.get("issuer_name") or "EPIK ISIMS Club"
+    date_str = cert_config.get("date_str") or time.strftime("%d/%m/%Y")
+    font_color = cert_config.get("font_color") or "#0f172a"
+    base_font_size = int(cert_config.get("font_size", 48))
+    name_y_pct = float(cert_config.get("name_y_pct", 48))
+    custom_bg_b64 = cert_config.get("custom_bg_base64", "")
+
+    # Interpolate variables in text fields
+    if recipient_data:
+        for k, v in recipient_data.items():
+            pattern = re.compile(re.escape("{" + str(k) + "}"), re.IGNORECASE)
+            event_title = pattern.sub(str(v or ""), event_title)
+            subtitle = pattern.sub(str(v or ""), subtitle)
+            issuer_name = pattern.sub(str(v or ""), issuer_name)
+
+    if template_type == "custom" and custom_bg_b64:
+        try:
+            clean_b64 = custom_bg_b64.split(",")[-1]
+            raw_bg = base64.b64decode(clean_b64)
+            img = Image.open(io.BytesIO(raw_bg)).convert("RGB")
+            img = img.resize((width, height), Image.Resampling.LANCZOS)
+        except Exception:
+            img = Image.new("RGB", (width, height), "#ffffff")
+    else:
+        if template_type == "modern_tech":
+            img = Image.new("RGB", (width, height), "#ffffff")
+            draw = ImageDraw.Draw(img)
+            draw.rectangle([0, 0, width, 16], fill="#4f46e5")
+            draw.rectangle([0, 16, width, 22], fill="#818cf8")
+            draw.rectangle([35, 45, width - 35, height - 45], outline="#e2e8f0", width=2)
+            draw.rectangle([45, 55, width - 45, height - 55], outline="#6366f1", width=1)
+            for cx, cy in [(45, 55), (width - 45, 55), (45, height - 55), (width - 45, height - 55)]:
+                draw.rectangle([cx - 8, cy - 8, cx + 8, cy + 8], fill="#4f46e5")
+
+            font_head = get_best_font("sans", 40)
+            font_sub = get_best_font("sans", 16)
+            font_desc = get_best_font("sans", 20)
+            font_meta = get_best_font("sans", 16)
+
+            draw.text((width//2, 130), "CERTIFICAT DE PARTICIPATION & RÉUSSITE", fill="#312e81", font=font_head, anchor="mm")
+            draw.text((width//2, 175), "ATTESTATION OFFICIELLE DE FORMATION & HACKATHON", fill="#6366f1", font=font_sub, anchor="mm")
+            draw.text((width//2, 245), "Le présent certificat est décerné avec distinction à :", fill="#64748b", font=font_desc, anchor="mm")
+
+            draw.text((width//2, int(height * (name_y_pct / 100.0)) + 65), subtitle, fill="#475569", font=font_desc, anchor="mm")
+            draw.text((width//2, int(height * (name_y_pct / 100.0)) + 105), event_title, fill="#312e81", font=font_head, anchor="mm")
+
+            draw.line([(100, height - 105), (350, height - 105)], fill="#cbd5e1", width=1)
+            draw.text((225, height - 85), f"Délivré le : {date_str}", fill="#64748b", font=font_meta, anchor="mm")
+
+            draw.line([(width - 350, height - 105), (width - 100, height - 105)], fill="#cbd5e1", width=1)
+            draw.text((width - 225, height - 85), f"Organisé par : {issuer_name}", fill="#312e81", font=font_meta, anchor="mm")
+
+        elif template_type == "classic":
+            img = Image.new("RGB", (width, height), "#fdfbf7")
+            draw = ImageDraw.Draw(img)
+            draw.rectangle([28, 28, width - 28, height - 28], outline="#78350f", width=5)
+            draw.rectangle([40, 40, width - 40, height - 40], outline="#d97706", width=2)
+
+            font_head = get_best_font("serif", 42)
+            font_sub = get_best_font("serif", 17)
+            font_desc = get_best_font("serif", 21)
+            font_meta = get_best_font("serif", 16)
+
+            draw.text((width//2, 140), "ATTESTATION DE RÉUSSITE", fill="#78350f", font=font_head, anchor="mm")
+            draw.text((width//2, 185), "EN RECONNAISSANCE DE MÉRITE ET D'ENGAGEMENT", fill="#b45309", font=font_sub, anchor="mm")
+            draw.text((width//2, 250), "Il est certifié par la présente que :", fill="#92400e", font=font_desc, anchor="mm")
+
+            draw.text((width//2, int(height * (name_y_pct / 100.0)) + 65), subtitle, fill="#78350f", font=font_desc, anchor="mm")
+            draw.text((width//2, int(height * (name_y_pct / 100.0)) + 105), event_title, fill="#451a03", font=font_head, anchor="mm")
+
+            draw.line([(120, height - 105), (360, height - 105)], fill="#d97706", width=1)
+            draw.text((240, height - 85), f"Fait le : {date_str}", fill="#92400e", font=font_meta, anchor="mm")
+
+            draw.line([(width - 360, height - 105), (width - 120, height - 105)], fill="#d97706", width=1)
+            draw.text((width - 240, height - 85), issuer_name, fill="#78350f", font=font_meta, anchor="mm")
+
+        else:  # prestige (default)
+            img = Image.new("RGB", (width, height), "#fcfbfa")
+            draw = ImageDraw.Draw(img)
+
+            draw.rectangle([25, 25, width - 25, height - 25], outline="#0f172a", width=6)
+            draw.rectangle([38, 38, width - 38, height - 38], outline="#c59b27", width=3)
+            for cx, cy in [(38, 38), (width - 38, 38), (38, height - 38), (width - 38, height - 38)]:
+                draw.rectangle([cx - 8, cy - 8, cx + 8, cy + 8], fill="#c59b27")
+
+            font_head = get_best_font("serif", 44)
+            font_sub = get_best_font("serif", 16)
+            font_desc = get_best_font("serif", 21)
+            font_meta = get_best_font("serif", 16)
+
+            draw.ellipse([width//2 - 40, 65, width//2 + 40, 145], fill="#0f172a", outline="#c59b27", width=3)
+            draw.text((width//2, 105), "★", fill="#c59b27", font=font_head, anchor="mm")
+
+            draw.text((width//2, 185), "CERTIFICAT D'EXCELLENCE", fill="#0f172a", font=font_head, anchor="mm")
+            draw.text((width//2, 230), "CE CERTIFICAT EST FIÈREMENT DÉCERNÉ À :", fill="#64748b", font=font_sub, anchor="mm")
+
+            draw.text((width//2, int(height * (name_y_pct / 100.0)) + 65), subtitle, fill="#475569", font=font_desc, anchor="mm")
+            draw.text((width//2, int(height * (name_y_pct / 100.0)) + 105), event_title, fill="#0f172a", font=font_head, anchor="mm")
+
+            draw.line([(120, height - 110), (380, height - 110)], fill="#94a3b8", width=1)
+            draw.text((250, height - 90), f"Délivré le : {date_str}", fill="#64748b", font=font_meta, anchor="mm")
+
+            draw.line([(width - 380, height - 110), (width - 120, height - 110)], fill="#94a3b8", width=1)
+            draw.text((width - 250, height - 90), issuer_name, fill="#0f172a", font=font_meta, anchor="mm")
+
+    # Draw Recipient Name with auto-scaling
+    draw = ImageDraw.Draw(img)
+    target_y = int(height * (name_y_pct / 100.0))
+    target_x = int(width * 0.5)
+
+    current_size = base_font_size
+    name_font = get_best_font("serif" if template_type in ("prestige", "classic") else "sans", current_size)
+    while current_size > 20:
+        name_font = get_best_font("serif" if template_type in ("prestige", "classic") else "sans", current_size)
+        bbox = draw.textbbox((target_x, target_y), recipient_name, font=name_font, anchor="mm")
+        if (bbox[2] - bbox[0]) <= (width - 220):
+            break
+        current_size -= 4
+
+    draw.text((target_x, target_y), recipient_name, fill=font_color, font=name_font, anchor="mm")
+
+    if template_type in ("prestige", "modern_tech"):
+        name_bbox = draw.textbbox((target_x, target_y), recipient_name, font=name_font, anchor="mm")
+        under_y = name_bbox[3] + 8
+        line_color = "#c59b27" if template_type == "prestige" else "#6366f1"
+        line_half_w = min(max((name_bbox[2] - name_bbox[0]) // 2 + 30, 100), 300)
+        draw.line([(target_x - line_half_w, under_y), (target_x + line_half_w, under_y)], fill=line_color, width=2)
+
+    out_buf = io.BytesIO()
+    if output_format == "png":
+        img.save(out_buf, format="PNG")
+        mime = "image/png"
+        ext = "png"
+    else:
+        img.save(out_buf, format="PDF")
+        mime = "application/pdf"
+        ext = "pdf"
+
+    raw_bytes = out_buf.getvalue()
+    b64_str = base64.b64encode(raw_bytes).decode("utf-8")
+
+    safe_name = re.sub(r"[^\w\s-]", "", recipient_name).strip().replace(" ", "_")
+    if not safe_name:
+        safe_name = "Participant"
+    filename = f"Certificat_{safe_name}.{ext}"
+
+    return {
+        "name": filename,
+        "data": f"data:{mime};base64,{b64_str}",
+        "content_bytes": raw_bytes,
+        "mime": mime
+    }
 
 def evaluate_spam_score(subject, content_html):
     subject = (subject or "").strip()
@@ -606,7 +893,7 @@ def send_single_email(sender_email, app_password, sender_name, recipient, subjec
         server.login(sender_email, clean_password)
         server.send_message(msg)
 
-def worker_campaign(recipients, subject, content_html, provider, sender_email, sender_name, app_password, brevo_api_key, delay_seconds, attachments):
+def worker_campaign(recipients, subject, content_html, provider, sender_email, sender_name, app_password, brevo_api_key, delay_seconds, attachments, cert_config=None):
     global campaign_state
     
     with state_lock:
@@ -643,6 +930,22 @@ def worker_campaign(recipients, subject, content_html, provider, sender_email, s
             campaign_state["current_index"] = idx + 1
             campaign_state["current_email"] = recipient_email
 
+        # Prepare attachments: static attachments + dynamic personalized certificate if enabled
+        current_attachments = list(attachments) if attachments else []
+        cert_info_msg = ""
+        if cert_config and cert_config.get("enabled"):
+            try:
+                rec_name = extract_recipient_name(recipient_email, recipient_data, cert_config.get("name_var", ""))
+                cert_att = generate_certificate_attachment(rec_name, cert_config, recipient_data, recipient_email)
+                if cert_att:
+                    current_attachments.append({
+                        "name": cert_att["name"],
+                        "data": cert_att["data"]
+                    })
+                    cert_info_msg = f" (Certificat : {cert_att['name']})"
+            except Exception as ce:
+                print(f"Erreur certificat pour {recipient_email}: {ce}")
+
         success = False
         error_msg = ""
         try:
@@ -654,7 +957,7 @@ def worker_campaign(recipients, subject, content_html, provider, sender_email, s
                     recipient=recipient_email,
                     subject=subject,
                     content_html=content_html,
-                    attachments=attachments,
+                    attachments=current_attachments,
                     recipient_data=recipient_data
                 )
             else:
@@ -665,7 +968,7 @@ def worker_campaign(recipients, subject, content_html, provider, sender_email, s
                     recipient=recipient_email,
                     subject=subject,
                     content_html=content_html,
-                    attachments=attachments,
+                    attachments=current_attachments,
                     recipient_data=recipient_data
                 )
             success = True
@@ -679,7 +982,7 @@ def worker_campaign(recipients, subject, content_html, provider, sender_email, s
                     "time": time.strftime("%H:%M:%S"),
                     "email": recipient_email,
                     "status": "success",
-                    "details": "Envoyé avec succès"
+                    "details": f"Envoyé avec succès{cert_info_msg}"
                 })
             else:
                 campaign_state["failed"] += 1
@@ -760,7 +1063,8 @@ def scheduler_daemon():
                                         app_password=pw,
                                         brevo_api_key=bk,
                                         delay_seconds=float(t.get("delay", 2)),
-                                        attachments=t.get("attachments", [])
+                                        attachments=t.get("attachments", []),
+                                        cert_config=t.get("certificate", {})
                                     )
                                     all_t = load_scheduled_tasks()
                                     for item in all_t:
@@ -922,6 +1226,11 @@ class MailServerHandler(BaseHTTPRequestHandler):
             self.send_json({"success": True, "signatures": signatures})
             return
 
+        elif path == "/api/certificate/config":
+            cfg = load_certificate_config()
+            self.send_json({"success": True, "config": cfg, "has_pil": HAS_PIL})
+            return
+
         self.send_error(404, "Page non trouvée")
 
     def do_POST(self):
@@ -989,6 +1298,20 @@ class MailServerHandler(BaseHTTPRequestHandler):
                 self.send_json({"success": False, "message": "Adresse email de test invalide."})
                 return
 
+            test_attachments = []
+            cert_config = data.get("certificate")
+            if cert_config and cert_config.get("enabled"):
+                try:
+                    rec_name = extract_recipient_name(target, {"email": target}, cert_config.get("name_var", ""))
+                    cert_att = generate_certificate_attachment(rec_name, cert_config, {"email": target}, target)
+                    if cert_att:
+                        test_attachments.append({
+                            "name": cert_att["name"],
+                            "data": cert_att["data"]
+                        })
+                except Exception as ce:
+                    print(f"Erreur certificat test-send: {ce}")
+
             try:
                 if provider == "brevo":
                     key = data.get("brevo_api_key") or cfg.get("brevo_api_key", "")
@@ -1005,7 +1328,7 @@ class MailServerHandler(BaseHTTPRequestHandler):
                         recipient=target,
                         subject=f"[TEST] {subject}",
                         content_html=content,
-                        attachments=[]
+                        attachments=test_attachments
                     )
                 else:
                     pwd = data.get("app_password") or cfg.get("app_password", "")
@@ -1019,7 +1342,7 @@ class MailServerHandler(BaseHTTPRequestHandler):
                         recipient=target,
                         subject=f"[TEST] {subject}",
                         content_html=content,
-                        attachments=[]
+                        attachments=test_attachments
                     )
                 self.send_json({"success": True, "message": f"Email de test envoyé avec succès à {target} !"})
             except Exception as e:
@@ -1067,6 +1390,8 @@ class MailServerHandler(BaseHTTPRequestHandler):
                 self.send_json({"success": False, "message": "Le sujet de l'email ne peut pas être vide."})
                 return
 
+            cert_config = data.get("certificate", {})
+
             # Lancer le thread de campagne
             thread = threading.Thread(
                 target=worker_campaign,
@@ -1080,7 +1405,8 @@ class MailServerHandler(BaseHTTPRequestHandler):
                     "app_password": pwd,
                     "brevo_api_key": brevo_key,
                     "delay_seconds": delay,
-                    "attachments": attachments
+                    "attachments": attachments,
+                    "cert_config": cert_config
                 },
                 daemon=True
             )
@@ -1244,6 +1570,7 @@ class MailServerHandler(BaseHTTPRequestHandler):
                 "sender_name": sender_name,
                 "delay": delay,
                 "attachments": attachments,
+                "certificate": data.get("certificate", {}),
                 "scheduled_datetime": scheduled_str,
                 "scheduled_formatted": formatted_target,
                 "scheduled_timestamp": sched_ts,
@@ -1438,6 +1765,44 @@ class MailServerHandler(BaseHTTPRequestHandler):
                 "message": f"Signature « {target.get('name')} » supprimée.",
                 "signatures": sigs
             })
+            return
+
+        elif path == "/api/certificate/config":
+            save_certificate_config(data)
+            self.send_json({"success": True, "message": "Configuration du certificat enregistrée avec succès !"})
+            return
+
+        elif path == "/api/certificate/preview":
+            sample_name = (data.get("sample_name") or "Mohamed Ali Mseddi").strip()
+            cert_cfg = data.get("config", {})
+            try:
+                # Force PNG format for instant image preview in browser
+                preview_cfg = dict(cert_cfg)
+                preview_cfg["output_format"] = "png"
+                att = generate_certificate_attachment(sample_name, preview_cfg)
+                self.send_json({
+                    "success": True,
+                    "preview_image": att["data"],
+                    "filename": att["name"],
+                    "mime": att["mime"]
+                })
+            except Exception as e:
+                self.send_json({"success": False, "message": f"Erreur génération aperçu : {str(e)}"})
+            return
+
+        elif path == "/api/certificate/download-sample":
+            sample_name = (data.get("sample_name") or "Mohamed Ali Mseddi").strip()
+            cert_cfg = data.get("config", {})
+            try:
+                att = generate_certificate_attachment(sample_name, cert_cfg)
+                self.send_response(200)
+                self.send_header("Content-Type", att["mime"])
+                self.send_header("Content-Disposition", f'attachment; filename="{att["name"]}"')
+                self.send_header("Content-Length", str(len(att["content_bytes"])))
+                self.end_headers()
+                self.wfile.write(att["content_bytes"])
+            except Exception as e:
+                self.send_error(500, f"Erreur téléchargement : {str(e)}")
             return
 
         self.send_error(404, "Endpoint non trouvé")

@@ -361,6 +361,41 @@
               </div>
             </div>
 
+            <!-- DYNAMIC CERTIFICATES CARD -->
+            <div class="p-3.5 rounded-xl border border-indigo-200/90 bg-gradient-to-r from-indigo-50/70 via-purple-50/40 to-slate-50/60 space-y-2.5 transition shadow-2xs">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <label class="flex items-center space-x-2.5 cursor-pointer text-xs font-bold text-indigo-950 select-none">
+                  <input type="checkbox" id="chk-enable-certificate" onchange="onCertificateToggleChange()" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 border-slate-300 transition cursor-pointer">
+                  <span class="flex items-center space-x-1.5">
+                    <span class="text-base">🎓</span>
+                    <span>Joindre un Certificat nominatif automatique</span>
+                  </span>
+                </label>
+                <div class="flex items-center space-x-1.5">
+                  <button 
+                    type="button" 
+                    onclick="openCertificateStudioModal()" 
+                    class="text-xs px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold transition shadow-sm cursor-pointer flex items-center space-x-1">
+                    <span>⚙️ Configurer le certificat</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Certificate info summary pill when enabled -->
+              <div id="cert-composer-summary" class="hidden text-[11px] text-slate-600 flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-indigo-100">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span id="cert-summary-badge" class="font-bold text-indigo-800 bg-white px-2 py-0.5 rounded-md border border-indigo-200 shadow-2xs">🏆 Prestige Or</span>
+                  <span id="cert-summary-format" class="text-slate-600 bg-white/80 px-2 py-0.5 rounded-md font-semibold border border-slate-200">Format: PDF</span>
+                  <span id="cert-summary-namevar" class="text-slate-600 bg-white/80 px-2 py-0.5 rounded-md font-semibold border border-slate-200">Nom : Automatique</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <button type="button" onclick="openCertificateStudioModal()" class="text-indigo-600 hover:text-indigo-800 font-bold hover:underline cursor-pointer flex items-center space-x-1 text-xs">
+                    <span>👁️ Aperçu & Personnalisation</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <!-- SCHEDULING MODE SECTION (Option 4) -->
             <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/90 space-y-2.5">
               <div class="flex items-center justify-between">
@@ -1352,6 +1387,263 @@
     </div>
   </div>
 
+  <!-- MODAL: STUDIO DE CERTIFICATS & ATTESTATIONS DYNAMIQUES -->
+  <div id="modal-certificate-studio" class="hidden fixed inset-0 z-55 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-4xl w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-6 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div>
+          <h3 class="font-bold text-slate-900 text-base sm:text-lg flex items-center space-x-2">
+            <span>🎓 Studio de Certificats & Attestations Dynamiques</span>
+          </h3>
+          <p class="text-xs text-slate-500 mt-0.5">Générez automatiquement un certificat nominatif unique pour chaque destinataire.</p>
+        </div>
+        <button onclick="closeCertificateStudioModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1 leading-none cursor-pointer">&times;</button>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <!-- Left: Configuration Form (7 cols) -->
+        <div class="lg:col-span-7 space-y-3.5 max-h-[70vh] overflow-y-auto custom-scroll pr-1">
+          <!-- 1. Enable Toggle -->
+          <div class="flex items-center justify-between p-3 rounded-xl bg-indigo-50/70 border border-indigo-100">
+            <div>
+              <h4 class="text-xs font-bold text-indigo-950">Générer les certificats pour cet envoi</h4>
+              <p class="text-[11px] text-indigo-700">Chaque email contiendra le certificat personnalisé en pièce jointe.</p>
+            </div>
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" id="cert-modal-enabled" class="sr-only peer" checked>
+              <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+            </label>
+          </div>
+
+          <!-- 2. Choice of Template -->
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">1. Choisissez le Modèle de Certificat :</label>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <label class="cursor-pointer border-2 rounded-xl p-2.5 text-center transition flex flex-col items-center justify-between space-y-1 hover:border-indigo-400 border-indigo-600 bg-indigo-50/20" id="card-tpl-prestige">
+                <input type="radio" name="cert_template_choice" value="prestige" class="sr-only" onchange="onCertTemplateSelected('prestige')" checked>
+                <span class="text-2xl">🏆</span>
+                <span class="text-xs font-bold text-slate-800">Prestige Or</span>
+                <span class="text-[10px] text-slate-500">Bleu nuit & Or</span>
+              </label>
+
+              <label class="cursor-pointer border-2 rounded-xl p-2.5 text-center transition flex flex-col items-center justify-between space-y-1 hover:border-indigo-400 border-slate-200" id="card-tpl-modern_tech">
+                <input type="radio" name="cert_template_choice" value="modern_tech" class="sr-only" onchange="onCertTemplateSelected('modern_tech')">
+                <span class="text-2xl">⚡</span>
+                <span class="text-xs font-bold text-slate-800">EPIK Tech</span>
+                <span class="text-[10px] text-slate-500">Moderne & Indigo</span>
+              </label>
+
+              <label class="cursor-pointer border-2 rounded-xl p-2.5 text-center transition flex flex-col items-center justify-between space-y-1 hover:border-indigo-400 border-slate-200" id="card-tpl-classic">
+                <input type="radio" name="cert_template_choice" value="classic" class="sr-only" onchange="onCertTemplateSelected('classic')">
+                <span class="text-2xl">📜</span>
+                <span class="text-xs font-bold text-slate-800">Académique</span>
+                <span class="text-[10px] text-slate-500">Parchemin</span>
+              </label>
+
+              <label class="cursor-pointer border-2 rounded-xl p-2.5 text-center transition flex flex-col items-center justify-between space-y-1 hover:border-indigo-400 border-slate-200" id="card-tpl-custom">
+                <input type="radio" name="cert_template_choice" value="custom" class="sr-only" onchange="onCertTemplateSelected('custom')">
+                <span class="text-2xl">🎨</span>
+                <span class="text-xs font-bold text-slate-800">Mon Canva</span>
+                <span class="text-[10px] text-slate-500">Image perso</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Custom Background upload container (revealed if custom selected) -->
+          <div id="cert-custom-bg-section" class="hidden p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+            <label class="block text-xs font-bold text-slate-700">Importer votre maquette de certificat (sans le nom) :</label>
+            <div class="flex items-center space-x-3">
+              <input type="file" id="cert-custom-bg-file" accept="image/png,image/jpeg" onchange="handleCertCustomBgUpload(event)" class="text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer">
+              <span id="cert-custom-bg-status" class="text-[11px] text-slate-400 italic">Aucun fichier</span>
+            </div>
+            <p class="text-[10px] text-slate-500">💡 Créez votre certificat sur Canva, Photoshop ou Figma, laissez l'espace du nom vide, exportez en PNG/JPG et importez-le ici !</p>
+          </div>
+
+          <!-- 3. Name Variable / Column Configuration -->
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700">2. Colonne / Variable pour le Nom :</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <input 
+                  type="text" 
+                  id="cert-name-var" 
+                  placeholder="Ex: {Nom} {Prénom} ou {Nom_Complet}" 
+                  class="w-full text-xs font-semibold px-3 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none">
+              </div>
+              <div>
+                <select id="cert-name-column-picker" onchange="onCertColumnPickerChange(this.value)" class="w-full text-xs font-medium px-2.5 py-2 rounded-xl border border-slate-200 bg-white focus:border-indigo-500 outline-none cursor-pointer">
+                  <option value="">-- Insérer une colonne détectée --</option>
+                  <!-- Populated from detectedColumns -->
+                </select>
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-500">
+              💡 Si vide ou si vous n'avez pas d'Excel, MailStorm extrait et formate automatiquement le nom depuis l'adresse email (ex: <code class="bg-slate-100 px-1 py-0.5 rounded text-indigo-700 font-mono">ahmed.benali@gmail.com</code> ➡️ <b>Ahmed Benali</b>).
+            </p>
+          </div>
+
+          <!-- 4. Certificate Text Info -->
+          <div class="space-y-2 pt-2 border-t border-slate-100">
+            <label class="block text-xs font-bold text-slate-700">3. Informations de l'Événement :</label>
+            <div class="space-y-2">
+              <div>
+                <label for="cert-event-title" class="block text-[11px] font-semibold text-slate-600 mb-0.5">Titre de la formation / événement * :</label>
+                <input 
+                  type="text" 
+                  id="cert-event-title" 
+                  placeholder="Ex: Formation Développement Web & IA 2026" 
+                  class="w-full text-xs font-medium px-3 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none">
+              </div>
+
+              <div>
+                <label for="cert-subtitle" class="block text-[11px] font-semibold text-slate-600 mb-0.5">Motif / Sous-titre :</label>
+                <input 
+                  type="text" 
+                  id="cert-subtitle" 
+                  placeholder="Ex: En reconnaissance de sa participation active et de son investissement remarquable." 
+                  class="w-full text-xs font-medium px-3 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none">
+              </div>
+
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label for="cert-issuer-name" class="block text-[11px] font-semibold text-slate-600 mb-0.5">Organisateur / Émetteur :</label>
+                  <input 
+                    type="text" 
+                    id="cert-issuer-name" 
+                    placeholder="Ex: EPIK ISIMS Club" 
+                    class="w-full text-xs font-medium px-3 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none">
+                </div>
+                <div>
+                  <label for="cert-date-str" class="block text-[11px] font-semibold text-slate-600 mb-0.5">Date délivrée :</label>
+                  <input 
+                    type="text" 
+                    id="cert-date-str" 
+                    placeholder="Ex: 23 Novembre 2026 (ou vide = aujourd'hui)" 
+                    class="w-full text-xs font-medium px-3 py-2 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none">
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. Name Positioning & Style -->
+          <div class="space-y-2 pt-2 border-t border-slate-100">
+            <label class="block text-xs font-bold text-slate-700">4. Ajustements & Format :</label>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">Position verticale :</label>
+                <div class="flex items-center space-x-2">
+                  <input type="range" id="cert-pos-y" min="20" max="80" value="48" oninput="onCertAdjustChange()" class="w-full accent-indigo-600 cursor-pointer">
+                  <span id="cert-pos-y-val" class="text-xs font-mono font-bold text-slate-700 w-8">48%</span>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">Taille du Nom :</label>
+                <div class="flex items-center space-x-2">
+                  <input type="range" id="cert-font-size" min="28" max="72" value="48" oninput="onCertAdjustChange()" class="w-full accent-indigo-600 cursor-pointer">
+                  <span id="cert-font-size-val" class="text-xs font-mono font-bold text-slate-700 w-8">48px</span>
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-[11px] font-semibold text-slate-600 mb-0.5">Couleur du Nom :</label>
+                <div class="flex items-center space-x-1.5">
+                  <input type="color" id="cert-font-color" value="#0f172a" onchange="onCertColorPickerChange(this.value)" class="w-8 h-8 rounded-lg border border-slate-200 cursor-pointer p-0">
+                  <input type="text" id="cert-font-color-hex" value="#0f172a" oninput="onCertColorHexChange(this.value)" class="w-full text-xs font-mono font-bold px-2 py-1 rounded-lg border border-slate-200">
+                </div>
+              </div>
+            </div>
+
+            <!-- Output Format Radio -->
+            <div class="flex items-center space-x-4 pt-1">
+              <span class="text-[11px] font-bold text-slate-600">Format de fichier :</span>
+              <label class="flex items-center space-x-1.5 cursor-pointer text-xs font-semibold text-slate-800">
+                <input type="radio" name="cert_output_format" value="pdf" checked class="text-indigo-600 focus:ring-indigo-500">
+                <span>📄 Document PDF (.pdf)</span>
+              </label>
+              <label class="flex items-center space-x-1.5 cursor-pointer text-xs font-semibold text-slate-800">
+                <input type="radio" name="cert_output_format" value="png" class="text-indigo-600 focus:ring-indigo-500">
+                <span>🖼️ Image HD (.png)</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Live Preview Box (5 cols) -->
+        <div class="lg:col-span-5 flex flex-col justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-slate-800 flex items-center space-x-1">
+                <span>👁️ Aperçu en temps réel</span>
+              </span>
+              <button 
+                type="button" 
+                onclick="refreshCertificatePreview()" 
+                class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 cursor-pointer flex items-center space-x-1">
+                <span>🔄 Actualiser</span>
+              </button>
+            </div>
+
+            <div class="mb-2">
+              <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-0.5">Tester avec un nom exemple :</label>
+              <div class="flex items-center space-x-1.5">
+                <input 
+                  type="text" 
+                  id="cert-preview-test-name" 
+                  value="Mohamed Ali Mseddi" 
+                  placeholder="Nom exemple..." 
+                  class="flex-1 text-xs font-bold px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white focus:border-indigo-500 outline-none">
+                <button 
+                  type="button" 
+                  onclick="refreshCertificatePreview()" 
+                  class="px-2.5 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold border border-indigo-200 cursor-pointer">
+                  Tester
+                </button>
+              </div>
+            </div>
+
+            <!-- Preview Image Display -->
+            <div class="relative w-full aspect-[1200/850] rounded-xl overflow-hidden border border-slate-300 bg-white shadow-sm flex items-center justify-center">
+              <img id="cert-preview-img" src="" alt="Aperçu du certificat" class="w-full h-full object-contain">
+              <div id="cert-preview-loading" class="hidden absolute inset-0 bg-white/80 backdrop-blur-2xs flex flex-col items-center justify-center space-y-2">
+                <svg class="animate-spin h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                <span class="text-xs font-bold text-slate-700">Génération du certificat...</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="space-y-2 pt-2 border-t border-slate-200">
+            <button 
+              type="button" 
+              onclick="downloadCertificateSample()" 
+              class="w-full py-2 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-800 text-xs font-bold shadow-2xs transition cursor-pointer flex items-center justify-center space-x-1.5">
+              <span>📥 Télécharger un exemple (PDF/PNG)</span>
+            </button>
+            <p class="text-[10px] text-center text-slate-400">
+              Chaque destinataire recevra automatiquement son fichier nominatif joint à son email.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+        <button 
+          type="button" 
+          onclick="closeCertificateStudioModal()" 
+          class="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition cursor-pointer">
+          Fermer
+        </button>
+        <button 
+          type="button" 
+          id="btn-save-certificate" 
+          onclick="saveCertificateStudioConfig()" 
+          class="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition cursor-pointer">
+          Enregistrer & Activer
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: TESTEUR ANTI-SPAM ET SCORE DE DÉLIVRABILITÉ (Option 2) -->
   <div id="modal-spam-score" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
     <div class="bg-white rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-8 space-y-4">
@@ -1466,12 +1758,14 @@
     let savedSignatures = [];
     let activeSignatureId = null;
     let isModalSigHtmlMode = false;
+    let certificateConfig = { enabled: false };
     let currentScheduleMode = 'now'; // 'now' or 'later'
 
     // Initialisation
     document.addEventListener("DOMContentLoaded", () => {
       fetchConfig();
       fetchSignatures();
+      fetchCertificateConfig();
       fetchContactLists();
       fetchScheduledTasks();
       fetchCustomTemplates();
@@ -1951,6 +2245,9 @@
           <span>+ {${col}}</span>
         </button>
       `).join("");
+      if (typeof updateCertColumnPicker === 'function') {
+        updateCertColumnPicker();
+      }
     }
 
     function insertDetectedTag(colName) {
@@ -2217,7 +2514,8 @@
             subject: subject,
             content: content,
             include_signature: includeSig,
-            email_signature: signature
+            email_signature: signature,
+            certificate: getCertificatePayload()
           })
         });
         const data = await res.json();
@@ -2327,7 +2625,8 @@
         delay: delay,
         attachments: attachmentsList,
         include_signature: includeSig !== undefined ? includeSig : true,
-        email_signature: signature || ""
+        email_signature: signature || "",
+        certificate: getCertificatePayload()
       };
 
       try {
@@ -3368,6 +3667,375 @@
     }
 
     // ===============================================================
+    // STUDIO DE CERTIFICATS & ATTESTATIONS DYNAMIQUES
+    // ===============================================================
+    let currentCertCustomBgBase64 = "";
+
+    async function fetchCertificateConfig() {
+      try {
+        const res = await fetch("/api/certificate/config");
+        const data = await res.json();
+        if (data.success && data.config) {
+          certificateConfig = data.config;
+          applyCertConfigToUI();
+        }
+      } catch (e) {
+        console.error("Erreur chargement config certificat:", e);
+      }
+    }
+
+    function applyCertConfigToUI() {
+      const chk = document.getElementById("chk-enable-certificate");
+      const modalChk = document.getElementById("cert-modal-enabled");
+      const isEnabled = !!certificateConfig.enabled;
+      if (chk) chk.checked = isEnabled;
+      if (modalChk) modalChk.checked = isEnabled;
+
+      const tpl = certificateConfig.template_type || "prestige";
+      onCertTemplateSelected(tpl, false);
+
+      const nameVar = document.getElementById("cert-name-var");
+      if (nameVar) nameVar.value = certificateConfig.name_var || "";
+
+      const eventTitle = document.getElementById("cert-event-title");
+      if (eventTitle) eventTitle.value = certificateConfig.event_title || "Formation Développement Web & IA 2026";
+
+      const subtitle = document.getElementById("cert-subtitle");
+      if (subtitle) subtitle.value = certificateConfig.subtitle || "En reconnaissance de sa participation active et de son investissement remarquable.";
+
+      const issuerName = document.getElementById("cert-issuer-name");
+      if (issuerName) issuerName.value = certificateConfig.issuer_name || "EPIK ISIMS Club";
+
+      const dateStr = document.getElementById("cert-date-str");
+      if (dateStr) dateStr.value = certificateConfig.date_str || "";
+
+      const posY = document.getElementById("cert-pos-y");
+      const posYVal = document.getElementById("cert-pos-y-val");
+      if (posY && posYVal) {
+        posY.value = certificateConfig.name_y_pct || 48;
+        posYVal.textContent = posY.value + "%";
+      }
+
+      const fontSize = document.getElementById("cert-font-size");
+      const fontSizeVal = document.getElementById("cert-font-size-val");
+      if (fontSize && fontSizeVal) {
+        fontSize.value = certificateConfig.font_size || 48;
+        fontSizeVal.textContent = fontSize.value + "px";
+      }
+
+      const fontColor = document.getElementById("cert-font-color");
+      const fontColorHex = document.getElementById("cert-font-color-hex");
+      if (fontColor && fontColorHex) {
+        fontColor.value = certificateConfig.font_color || "#0f172a";
+        fontColorHex.value = certificateConfig.font_color || "#0f172a";
+      }
+
+      const formatRadios = document.getElementsByName("cert_output_format");
+      for (const r of formatRadios) {
+        r.checked = (r.value === (certificateConfig.output_format || "pdf"));
+      }
+
+      if (certificateConfig.custom_bg_base64) {
+        currentCertCustomBgBase64 = certificateConfig.custom_bg_base64;
+        const st = document.getElementById("cert-custom-bg-status");
+        if (st) st.textContent = "✅ Image personnalisée enregistrée";
+      }
+
+      updateCertSummaryBox();
+    }
+
+    function updateCertSummaryBox() {
+      const summaryBox = document.getElementById("cert-composer-summary");
+      const chk = document.getElementById("chk-enable-certificate");
+      if (!summaryBox || !chk) return;
+
+      if (!chk.checked) {
+        summaryBox.classList.add("hidden");
+        return;
+      }
+
+      summaryBox.classList.remove("hidden");
+      const badge = document.getElementById("cert-summary-badge");
+      const fmt = document.getElementById("cert-summary-format");
+      const nvar = document.getElementById("cert-summary-namevar");
+
+      const tpl = certificateConfig.template_type || "prestige";
+      const tplNames = {
+        prestige: "🏆 Prestige Or",
+        modern_tech: "⚡ EPIK Tech",
+        classic: "📜 Académique",
+        custom: "🎨 Canva / Perso"
+      };
+      if (badge) badge.textContent = tplNames[tpl] || "Certificat";
+      if (fmt) fmt.textContent = "Format: " + (certificateConfig.output_format || "pdf").toUpperCase();
+      if (nvar) nvar.textContent = "Nom : " + (certificateConfig.name_var || "Automatique");
+    }
+
+    function onCertificateToggleChange() {
+      const chk = document.getElementById("chk-enable-certificate");
+      const modalChk = document.getElementById("cert-modal-enabled");
+      if (chk && modalChk) modalChk.checked = chk.checked;
+      certificateConfig.enabled = chk ? chk.checked : false;
+      updateCertSummaryBox();
+    }
+
+    function openCertificateStudioModal() {
+      applyCertConfigToUI();
+      updateCertColumnPicker();
+      document.getElementById("modal-certificate-studio").classList.remove("hidden");
+      refreshCertificatePreview();
+    }
+
+    function closeCertificateStudioModal() {
+      document.getElementById("modal-certificate-studio").classList.add("hidden");
+    }
+
+    function onCertTemplateSelected(tpl, triggerRefresh = true) {
+      const radios = document.getElementsByName("cert_template_choice");
+      for (const r of radios) {
+        r.checked = (r.value === tpl);
+      }
+
+      const cardIds = {
+        prestige: "card-tpl-prestige",
+        modern_tech: "card-tpl-modern_tech",
+        classic: "card-tpl-classic",
+        custom: "card-tpl-custom"
+      };
+
+      for (const [k, id] of Object.entries(cardIds)) {
+        const el = document.getElementById(id);
+        if (el) {
+          if (k === tpl) {
+            el.className = "cursor-pointer border-2 rounded-xl p-2.5 text-center transition flex flex-col items-center justify-between space-y-1 border-indigo-600 bg-indigo-50/30 shadow-2xs";
+          } else {
+            el.className = "cursor-pointer border-2 rounded-xl p-2.5 text-center transition flex flex-col items-center justify-between space-y-1 border-slate-200 hover:border-indigo-300";
+          }
+        }
+      }
+
+      const customSection = document.getElementById("cert-custom-bg-section");
+      if (customSection) {
+        if (tpl === "custom") customSection.classList.remove("hidden");
+        else customSection.classList.add("hidden");
+      }
+
+      if (triggerRefresh) {
+        refreshCertificatePreview();
+      }
+    }
+
+    function handleCertCustomBgUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        currentCertCustomBgBase64 = e.target.result;
+        const st = document.getElementById("cert-custom-bg-status");
+        if (st) st.textContent = `✅ Image chargée (${(file.size / 1024).toFixed(0)} KB)`;
+        refreshCertificatePreview();
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function updateCertColumnPicker() {
+      const picker = document.getElementById("cert-name-column-picker");
+      if (!picker) return;
+
+      if (!detectedColumns || detectedColumns.length === 0) {
+        picker.innerHTML = `<option value="">-- Aucune colonne Excel détectée --</option>`;
+        return;
+      }
+
+      let opts = `<option value="">-- Insérer une colonne détectée --</option>`;
+      const hasNom = detectedColumns.some(c => c.toLowerCase() === "nom");
+      const hasPrenom = detectedColumns.some(c => c.toLowerCase().includes("prenom") || c.toLowerCase().includes("prénom"));
+      if (hasNom && hasPrenom) {
+        opts += `<option value="{Prénom} {Nom}">⭐ {Prénom} {Nom} (Complet)</option>`;
+      }
+      for (const col of detectedColumns) {
+        opts += `<option value="{${col}}">{${col}}</option>`;
+      }
+      picker.innerHTML = opts;
+    }
+
+    function onCertColumnPickerChange(val) {
+      if (!val) return;
+      const input = document.getElementById("cert-name-var");
+      if (input) {
+        input.value = val;
+      }
+    }
+
+    function onCertAdjustChange() {
+      const posY = document.getElementById("cert-pos-y");
+      const posYVal = document.getElementById("cert-pos-y-val");
+      if (posY && posYVal) posYVal.textContent = posY.value + "%";
+
+      const fontSize = document.getElementById("cert-font-size");
+      const fontSizeVal = document.getElementById("cert-font-size-val");
+      if (fontSize && fontSizeVal) fontSizeVal.textContent = fontSize.value + "px";
+
+      debounceCertPreview();
+    }
+
+    function onCertColorPickerChange(hex) {
+      const hexInput = document.getElementById("cert-font-color-hex");
+      if (hexInput) hexInput.value = hex;
+      debounceCertPreview();
+    }
+
+    function onCertColorHexChange(hex) {
+      if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+        const picker = document.getElementById("cert-font-color");
+        if (picker) picker.value = hex;
+        debounceCertPreview();
+      }
+    }
+
+    let certPreviewDebounceTimer = null;
+    function debounceCertPreview() {
+      clearTimeout(certPreviewDebounceTimer);
+      certPreviewDebounceTimer = setTimeout(refreshCertificatePreview, 350);
+    }
+
+    function getCertFormConfig() {
+      const selectedTplRadio = document.querySelector('input[name="cert_template_choice"]:checked');
+      const tpl = selectedTplRadio ? selectedTplRadio.value : "prestige";
+
+      const selectedFmtRadio = document.querySelector('input[name="cert_output_format"]:checked');
+      const fmt = selectedFmtRadio ? selectedFmtRadio.value : "pdf";
+
+      const modalChk = document.getElementById("cert-modal-enabled");
+      const isEnabled = modalChk ? modalChk.checked : true;
+
+      return {
+        enabled: isEnabled,
+        template_type: tpl,
+        output_format: fmt,
+        name_var: (document.getElementById("cert-name-var") ? document.getElementById("cert-name-var").value.trim() : ""),
+        event_title: (document.getElementById("cert-event-title") ? document.getElementById("cert-event-title").value.trim() : "Formation Développement Web & IA 2026"),
+        subtitle: (document.getElementById("cert-subtitle") ? document.getElementById("cert-subtitle").value.trim() : ""),
+        issuer_name: (document.getElementById("cert-issuer-name") ? document.getElementById("cert-issuer-name").value.trim() : "EPIK ISIMS Club"),
+        date_str: (document.getElementById("cert-date-str") ? document.getElementById("cert-date-str").value.trim() : ""),
+        name_y_pct: parseFloat(document.getElementById("cert-pos-y") ? document.getElementById("cert-pos-y").value : 48),
+        font_size: parseInt(document.getElementById("cert-font-size") ? document.getElementById("cert-font-size").value : 48),
+        font_color: (document.getElementById("cert-font-color-hex") ? document.getElementById("cert-font-color-hex").value.trim() : "#0f172a"),
+        custom_bg_base64: currentCertCustomBgBase64
+      };
+    }
+
+    async function refreshCertificatePreview() {
+      const loader = document.getElementById("cert-preview-loading");
+      const img = document.getElementById("cert-preview-img");
+      const sampleNameInput = document.getElementById("cert-preview-test-name");
+      const sampleName = (sampleNameInput ? sampleNameInput.value.trim() : "") || "Mohamed Ali Mseddi";
+
+      if (loader) loader.classList.remove("hidden");
+
+      const cfg = getCertFormConfig();
+
+      try {
+        const res = await fetch("/api/certificate/preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sample_name: sampleName,
+            config: cfg
+          })
+        });
+        const data = await res.json();
+        if (data.success && data.preview_image) {
+          if (img) img.src = data.preview_image;
+        } else {
+          console.warn("Aperçu certificat:", data.message);
+        }
+      } catch (e) {
+        console.error("Erreur actualisation aperçu certificat:", e);
+      } finally {
+        if (loader) loader.classList.add("hidden");
+      }
+    }
+
+    async function downloadCertificateSample() {
+      const sampleNameInput = document.getElementById("cert-preview-test-name");
+      const sampleName = (sampleNameInput ? sampleNameInput.value.trim() : "") || "Mohamed Ali Mseddi";
+      const cfg = getCertFormConfig();
+
+      try {
+        const res = await fetch("/api/certificate/download-sample", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            sample_name: sampleName,
+            config: cfg
+          })
+        });
+        if (!res.ok) throw new Error("Erreur de téléchargement");
+
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        const ext = cfg.output_format === "png" ? "png" : "pdf";
+        a.download = `Certificat_${sampleName.replace(/\s+/g, '_')}.${ext}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      } catch (e) {
+        alert("Erreur lors du téléchargement du certificat exemple : " + e.message);
+      }
+    }
+
+    async function saveCertificateStudioConfig() {
+      const btn = document.getElementById("btn-save-certificate");
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Sauvegarde...";
+      }
+
+      const cfg = getCertFormConfig();
+      certificateConfig = cfg;
+
+      try {
+        const res = await fetch("/api/certificate/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(cfg)
+        });
+        const data = await res.json();
+        if (data.success) {
+          const chk = document.getElementById("chk-enable-certificate");
+          if (chk) chk.checked = cfg.enabled;
+          updateCertSummaryBox();
+          closeCertificateStudioModal();
+          alert("✅ Paramètres du certificat enregistrés avec succès !");
+        } else {
+          alert("Erreur: " + data.message);
+        }
+      } catch (e) {
+        alert("Erreur réseau lors de la sauvegarde : " + e.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = "Enregistrer & Activer";
+        }
+      }
+    }
+
+    function getCertificatePayload() {
+      const chk = document.getElementById("chk-enable-certificate");
+      if (!chk || !chk.checked) {
+        return { enabled: false };
+      }
+      return {
+        ...certificateConfig,
+        enabled: true
+      };
+    }
+
+    // ===============================================================
     // OPTION 1: GESTIONNAIRE DE LISTES DE CONTACTS ET GROUPES
     // ===============================================================
     async function fetchContactLists() {
@@ -3840,7 +4508,8 @@
         attachments: attachmentsList,
         scheduled_datetime: schedTime,
         include_signature: includeSig !== undefined ? includeSig : true,
-        email_signature: signature || ""
+        email_signature: signature || "",
+        certificate: getCertificatePayload()
       };
 
       const btn = document.getElementById("btn-start-campaign");
