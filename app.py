@@ -11,6 +11,7 @@ import datetime
 import ssl
 import smtplib
 import re
+import random
 import threading
 import webbrowser
 import base64
@@ -760,6 +761,21 @@ def apply_template_variables(text, rec_email, rec_data=None):
             result = pattern.sub(val_str, result)
     return result
 
+def make_subject_unthreadable(subject):
+    """
+    Empêche le regroupement automatique de Gmail (Conversation View / threading).
+    Injecte une séquence unique de caractères Zero-Width invisibles à l'œil humain,
+    forçant Gmail et les webmails à créer un fil de discussion 100% indépendant et isolé
+    pour chaque email envoyé, même au même contact avec le même sujet.
+    """
+    if not subject:
+        return subject
+    clean_sub = subject.rstrip("\u200b\u200c\u200d\ufeff")
+    token_val = int(time.time() * 1000) % 10000000 + random.randint(100, 9999)
+    bits = bin(token_val)[2:]
+    zw_seq = "".join("\u200b" if b == "0" else "\u200c" for b in bits)
+    return f"{clean_sub}\u200b{zw_seq}"
+
 def verify_brevo_credentials(api_key):
     """
     Vérifie la clé API Brevo via HTTPS (Port 443 - Ouvert partout dans le Cloud)
@@ -835,10 +851,12 @@ def verify_brevo_credentials(api_key):
 def send_single_email_brevo(api_key, sender_email, sender_name, recipient, subject, content_html, attachments=None, recipient_data=None):
     """
     Envoie un email via l'API REST de Brevo (HTTPS Port 443) avec support des variables Excel
+    et technologie Anti-Threading pour garantir un fil séparé.
     """
     clean_key = api_key.strip()
     
-    personalized_subject = apply_template_variables(subject, recipient, recipient_data)
+    raw_subject = apply_template_variables(subject, recipient, recipient_data)
+    unthreadable_subject = make_subject_unthreadable(raw_subject)
     personalized_content = apply_template_variables(content_html, recipient, recipient_data)
 
     payload = {
@@ -853,8 +871,12 @@ def send_single_email_brevo(api_key, sender_email, sender_name, recipient, subje
         "to": [
             {"email": recipient}
         ],
-        "subject": personalized_subject,
-        "htmlContent": personalized_content
+        "subject": unthreadable_subject,
+        "htmlContent": personalized_content,
+        "headers": {
+            "X-Entity-Ref-ID": str(uuid.uuid4()),
+            "References": f"<{uuid.uuid4()}@mailstorm.local>"
+        }
     }
 
     if attachments:
@@ -921,10 +943,12 @@ def verify_gmail_credentials(email_address, app_password):
 def send_single_email(sender_email, app_password, sender_name, recipient, subject, content_html, attachments=None, recipient_data=None):
     """
     Envoie un seul email via Gmail SMTP avec support des variables Excel
+    et technologie Anti-Threading pour garantir un fil séparé.
     """
     clean_password = app_password.replace(" ", "")
 
-    personalized_subject = apply_template_variables(subject, recipient, recipient_data)
+    raw_subject = apply_template_variables(subject, recipient, recipient_data)
+    unthreadable_subject = make_subject_unthreadable(raw_subject)
     personalized_content = apply_template_variables(content_html, recipient, recipient_data)
     
     msg = MIMEMultipart("mixed")
@@ -933,13 +957,14 @@ def send_single_email(sender_email, app_password, sender_name, recipient, subjec
     else:
         msg["From"] = sender_email
     msg["To"] = recipient
-    msg["Subject"] = personalized_subject
+    msg["Subject"] = unthreadable_subject
 
     # En-têtes RFC standards pour chaque email
     domain = sender_email.split("@")[-1] if "@" in sender_email else "gmail.com"
     msg["Message-ID"] = make_msgid(domain=domain)
     msg["Date"] = formatdate(localtime=True)
     msg["X-Entity-Ref-ID"] = str(uuid.uuid4())
+    msg["References"] = f"<{uuid.uuid4()}@{domain}>"
 
     # Corps de l'email (HTML + Alternative texte)
     alt_part = MIMEMultipart("alternative")
