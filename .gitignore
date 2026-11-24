@@ -21,4 +21,3 @@ venv/
 # Logs
 *.log
 rapport_envoi.csv
-*.db

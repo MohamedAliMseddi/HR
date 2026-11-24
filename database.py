@@ -288,6 +288,49 @@ def init_db():
         """, (admin_row["id"],))
         conn.commit()
 
+    # Initialiser / Restaurer le compte Club mseddi lassad (mss)
+    c.execute("SELECT * FROM users WHERE username = 'mss' LIMIT 1")
+    mss_row = c.fetchone()
+    if not mss_row:
+        pwd_hash, salt = hash_password("mss123")
+        c.execute("""
+        INSERT INTO users (username, email, display_name, club_name, phone, password_hash, salt, role, status, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            "mss",
+            "mss.mss.mousdi@gmail.com",
+            "mseddi lassad",
+            "Bureau Exécutif | mss",
+            "+21623926721",
+            pwd_hash,
+            salt,
+            "club",
+            "active",
+            time.strftime("%Y-%m-%d %H:%M:%S")
+        ))
+        conn.commit()
+        mss_id = c.lastrowid
+        try:
+            mss_tenant = get_tenant_db(mss_id)
+            mss_cur = mss_tenant.cursor()
+            sig_id = str(uuid.uuid4())[:8]
+            sig_content = """<p style="margin: 0; font-size: 14px; font-weight: bold; color: #0f172a;">mseddi lassad</p>
+<p style="margin: 0; font-size: 12px; color: #4f46e5; font-weight: 600;">Bureau Exécutif | mss</p>
+<p style="margin: 4px 0 0 0; font-size: 11px; color: #64748b;">📞 +21623926721 &nbsp;|&nbsp; ✉️ mss.mss.mousdi@gmail.com</p>
+<p style="margin: 2px 0 0 0; font-size: 11px; color: #64748b;">📍 Tunisie</p>"""
+            mss_cur.execute("""
+            INSERT OR REPLACE INTO signatures (id, name, content, is_default, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """, (sig_id, "Signature Officielle Club", sig_content, 1, time.strftime("%Y-%m-%d %H:%M:%S"), time.strftime("%Y-%m-%d %H:%M:%S")))
+            mss_cur.execute("INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)", ("sender_name", json.dumps("mseddi lassad", ensure_ascii=False)))
+            mss_cur.execute("INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)", ("sender_email", json.dumps("mss.mss.mousdi@gmail.com", ensure_ascii=False)))
+            mss_cur.execute("INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)", ("email_signature", json.dumps(sig_content, ensure_ascii=False)))
+            mss_cur.execute("INSERT OR REPLACE INTO config (key, value) VALUES (?, ?)", ("include_signature", json.dumps(True)))
+            mss_tenant.commit()
+            mss_tenant.close()
+        except Exception as e:
+            print("Erreur initialisation tenant mss:", e)
+
     conn.close()
 
     # Migration des tables existantes vers tenants/club_1.db pour le super admin

@@ -1560,19 +1560,19 @@
   </div>
 
   <!-- MODAL: GESTIONNAIRE DE SIGNATURES MULTIPLES -->
-  <div id="modal-manage-signatures" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-8 space-y-4">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+  <div id="modal-manage-signatures" onclick="if(event.target === this) closeManageSignaturesModal()" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-xl w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-auto space-y-4 max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 flex-shrink-0">
         <div>
           <h3 class="font-bold text-slate-900 text-base sm:text-lg flex items-center space-x-2">
             <span>✒️ Mes Signatures d'Emails</span>
           </h3>
           <p class="text-xs text-slate-500 mt-0.5">Créez plusieurs signatures (EPIK Club, RH, Personnelle) et choisissez celle à insérer en 1 clic.</p>
         </div>
-        <button onclick="closeManageSignaturesModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1 leading-none cursor-pointer">&times;</button>
+        <button type="button" onclick="closeManageSignaturesModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1 leading-none cursor-pointer" title="Fermer">&times;</button>
       </div>
 
-      <div class="flex items-center justify-between p-3 rounded-xl bg-indigo-50/70 border border-indigo-100">
+      <div class="flex items-center justify-between p-3 rounded-xl bg-indigo-50/70 border border-indigo-100 flex-shrink-0">
         <div>
           <h4 class="text-xs font-bold text-indigo-950">Créer une nouvelle signature</h4>
           <p class="text-[11px] text-indigo-700">Personnalisez votre texte, vos coordonnées, liens et mise en page.</p>
@@ -1586,31 +1586,34 @@
       </div>
 
       <!-- Container of all saved signatures -->
-      <div id="saved-signatures-modal-container" class="space-y-3 max-h-[50vh] overflow-y-auto custom-scroll pr-1">
+      <div id="saved-signatures-modal-container" class="space-y-3 overflow-y-auto custom-scroll pr-1 flex-1">
         <!-- Dynamically filled by JS -->
       </div>
 
-      <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-between flex-shrink-0">
         <span class="text-[11px] text-slate-400">💡 La signature par défaut est automatiquement cochée lors de vos envois.</span>
-        <button onclick="closeManageSignaturesModal()" class="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition cursor-pointer">Fermer</button>
+        <button type="button" onclick="closeManageSignaturesModal()" class="px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-semibold transition cursor-pointer">Fermer</button>
       </div>
     </div>
   </div>
 
   <!-- MODAL: CRÉER / MODIFIER UNE SIGNATURE -->
-  <div id="modal-edit-signature" class="hidden fixed inset-0 z-55 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-8 space-y-4">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+  <div id="modal-edit-signature" onclick="if(event.target === this) closeEditSignatureModal()" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-auto flex flex-col max-h-[92vh]">
+      
+      <!-- Fixed Header (Toujours visible en haut !) -->
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 flex-shrink-0">
         <div>
           <h3 id="sig-modal-title" class="font-bold text-slate-900 text-base sm:text-lg flex items-center space-x-2">
             <span>✍️ Nouvelle Signature</span>
           </h3>
           <p class="text-xs text-slate-500 mt-0.5">Donnez un nom et concevez le style visuel de votre signature.</p>
         </div>
-        <button onclick="closeEditSignatureModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1 leading-none cursor-pointer">&times;</button>
+        <button type="button" onclick="closeEditSignatureModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1 leading-none cursor-pointer" title="Fermer">&times;</button>
       </div>
 
-      <div class="space-y-3">
+      <!-- Scrollable Body (Défilement fluide interne sans déborder de l'écran) -->
+      <div class="space-y-3 overflow-y-auto custom-scroll pr-1 py-3 flex-1">
         <input type="hidden" id="sig-edit-id" value="">
         <div>
           <label for="sig-edit-name" class="block text-xs font-semibold text-slate-700 mb-1">Nom de la signature * :</label>
@@ -1657,13 +1660,13 @@
             id="sig-edit-editor" 
             contenteditable="true" 
             oninput="updateModalSigPreview()" 
-            class="w-full min-h-[110px] max-h-[200px] p-3 rounded-xl border border-slate-200 bg-white overflow-y-auto text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition custom-scroll"
+            class="w-full min-h-[90px] max-h-[160px] p-3 rounded-xl border border-slate-200 bg-white overflow-y-auto text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition custom-scroll"
             placeholder="Tapez ou collez votre signature ici (Ctrl+V depuis Gmail)..."></div>
 
           <!-- Raw HTML Textarea -->
           <textarea 
             id="sig-edit-raw" 
-            rows="6" 
+            rows="5" 
             oninput="updateModalSigPreview()" 
             class="hidden w-full text-xs font-mono p-3 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition bg-slate-50/50"
             placeholder="Code HTML de votre signature..."></textarea>
@@ -1672,13 +1675,14 @@
         <!-- Live Preview of edited signature -->
         <div>
           <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Aperçu en direct :</label>
-          <div id="sig-edit-preview" class="p-3 rounded-xl border border-dashed border-slate-300 bg-slate-50/60 max-h-[140px] overflow-y-auto text-xs custom-scroll">
+          <div id="sig-edit-preview" class="p-2.5 rounded-xl border border-dashed border-slate-300 bg-slate-50/60 max-h-[110px] overflow-y-auto text-xs custom-scroll">
             <span class="text-slate-400 italic">Aperçu vide...</span>
           </div>
         </div>
       </div>
 
-      <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+      <!-- Fixed Footer (Toujours visible en bas !) -->
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2 flex-shrink-0">
         <button 
           type="button" 
           onclick="closeEditSignatureModal()" 
@@ -1693,6 +1697,7 @@
           Enregistrer la signature
         </button>
       </div>
+
     </div>
   </div>
 
@@ -3978,6 +3983,8 @@
       insertModalSigPreset('epik');
       updateModalSigPreview();
 
+      const manageModal = document.getElementById("modal-manage-signatures");
+      if (manageModal) manageModal.classList.add("hidden");
       document.getElementById("modal-edit-signature").classList.remove("hidden");
     }
 
@@ -4003,11 +4010,15 @@
       btn.classList.remove("bg-indigo-100", "text-indigo-700");
 
       updateModalSigPreview();
+      const manageModal = document.getElementById("modal-manage-signatures");
+      if (manageModal) manageModal.classList.add("hidden");
       document.getElementById("modal-edit-signature").classList.remove("hidden");
     }
 
     function closeEditSignatureModal() {
       document.getElementById("modal-edit-signature").classList.add("hidden");
+      const manageModal = document.getElementById("modal-manage-signatures");
+      if (manageModal) manageModal.classList.remove("hidden");
     }
 
     function toggleModalSigMode() {
