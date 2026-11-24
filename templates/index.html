@@ -35,9 +35,9 @@
         <div>
           <div class="flex items-center space-x-1.5 sm:space-x-2">
             <h1 class="text-base sm:text-lg font-bold bg-gradient-to-r from-slate-900 to-indigo-900 bg-clip-text text-transparent">MailStorm</h1>
-            <span class="text-[10px] sm:text-xs font-semibold px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">Gmail</span>
+            <span id="app-badge" class="text-[10px] sm:text-xs font-semibold px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full border border-indigo-100">Club</span>
           </div>
-          <p class="text-[11px] text-slate-500 hidden sm:block">Envoi d'emails groupés en toute simplicité</p>
+          <p id="app-subtitle" class="text-[11px] text-slate-500 hidden sm:block">Plateforme d'envoi d'emails pour clubs</p>
         </div>
       </div>
 
@@ -2047,7 +2047,7 @@
   </div>
 
   <!-- MOBILE BOTTOM NAVIGATION (Barre fixe moderne pour smartphones) -->
-  <nav class="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 py-1.5 px-2 flex justify-around items-center shadow-lg">
+  <nav id="mobile-bottom-nav" class="sm:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 py-1.5 px-2 flex justify-around items-center shadow-lg">
     <button onclick="switchTab('sender')" id="mobile-tab-sender" class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl text-indigo-600 font-bold transition">
       <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/></svg>
       <span class="text-[10px]">Envoyer</span>
@@ -2104,11 +2104,55 @@
             }
             navUser.textContent = label;
           }
+
           if (data.user.role === 'superadmin') {
+            // Mode Super Admin Dédié : Uniquement l'espace Super Admin pour gérer les comptes
+            const appBadge = document.getElementById("app-badge");
+            const appSub = document.getElementById("app-subtitle");
+            if (appBadge) {
+              appBadge.textContent = "👑 SaaS Admin";
+              appBadge.className = "text-[10px] sm:text-xs font-bold px-2.5 py-0.5 bg-amber-100 text-amber-900 rounded-full border border-amber-300";
+            }
+            if (appSub) {
+              appSub.textContent = "Console de gestion des clubs & abonnements";
+            }
+
+            // Masquer tous les onglets club (Envoyer, Historique, Paramètres, Guide)
+            ["sender", "history", "settings", "guide"].forEach(t => {
+              const tabEl = document.getElementById(`tab-${t}`);
+              if (tabEl) tabEl.classList.add("hidden");
+            });
+
+            // Masquer la barre de navigation mobile du bas
+            const mobileBar = document.getElementById("mobile-bottom-nav");
+            if (mobileBar) mobileBar.classList.add("hidden");
+
+            // Afficher le badge actif Super Admin dans le header
             const adminTab = document.getElementById("tab-admin");
+            if (adminTab) {
+              adminTab.classList.remove("hidden");
+              adminTab.className = "px-3.5 py-1.5 rounded-xl text-xs font-black text-amber-900 bg-amber-100 border border-amber-300 transition flex items-center space-x-1.5 pointer-events-none";
+              adminTab.innerHTML = "<span>👑</span><span>Console Super Admin</span>";
+            }
+
+            switchTab('admin');
+          } else {
+            // Mode Club Standard : Afficher les onglets clubs, masquer super admin
+            const appBadge = document.getElementById("app-badge");
+            if (appBadge && data.user.club_name) {
+              appBadge.textContent = data.user.club_name;
+            }
+            ["sender", "history", "settings", "guide"].forEach(t => {
+              const tabEl = document.getElementById(`tab-${t}`);
+              if (tabEl) tabEl.classList.remove("hidden");
+            });
+            const mobileBar = document.getElementById("mobile-bottom-nav");
+            if (mobileBar) mobileBar.classList.remove("hidden");
+
+            const adminTab = document.getElementById("tab-admin");
+            if (adminTab) adminTab.classList.add("hidden");
             const mobileAdminTab = document.getElementById("mobile-tab-admin");
-            if (adminTab) adminTab.classList.remove("hidden");
-            if (mobileAdminTab) mobileAdminTab.classList.remove("hidden");
+            if (mobileAdminTab) mobileAdminTab.classList.add("hidden");
           }
           return true;
         } else {
@@ -2193,8 +2237,16 @@
     let currentScheduleMode = 'now'; // 'now' or 'later'
 
     // Initialisation
-    document.addEventListener("DOMContentLoaded", () => {
-      checkAuthStatus();
+    document.addEventListener("DOMContentLoaded", async () => {
+      const isAuth = await checkAuthStatus();
+      if (!isAuth) return;
+
+      // Mode Super Admin : Uniquement charger la gestion des clubs
+      if (currentUser && currentUser.role === 'superadmin') {
+        fetchAdminClubs();
+        return;
+      }
+
       fetchConfig();
       fetchSignatures();
       fetchCertificateConfig();
@@ -2203,7 +2255,9 @@
       fetchCustomTemplates();
       // Synchronisation du champ delay
       const slider = document.getElementById("delay-slider");
-      document.getElementById("delay-display").textContent = parseFloat(slider.value).toFixed(1) + " sec";
+      if (slider) {
+        document.getElementById("delay-display").textContent = parseFloat(slider.value).toFixed(1) + " sec";
+      }
 
       // Track last focused input for tag insertion
       const subj = document.getElementById("subject-input");
@@ -2213,22 +2267,30 @@
       
       // Setup drag and drop for emails dropzone
       const dropzone = document.getElementById("dropzone");
-      ["dragenter", "dragover"].forEach(eventName => {
-        dropzone.addEventListener(eventName, (e) => { e.preventDefault(); dropzone.classList.add("border-indigo-500", "bg-indigo-50/50"); }, false);
-      });
-      ["dragleave", "drop"].forEach(eventName => {
-        dropzone.addEventListener(eventName, (e) => { e.preventDefault(); dropzone.classList.remove("border-indigo-500", "bg-indigo-50/50"); }, false);
-      });
-      dropzone.addEventListener("drop", (e) => {
-        const dt = e.dataTransfer;
-        if (dt.files && dt.files.length) {
-          processFileForEmails(dt.files[0]);
-        }
-      });
+      if (dropzone) {
+        ["dragenter", "dragover"].forEach(eventName => {
+          dropzone.addEventListener(eventName, (e) => { e.preventDefault(); dropzone.classList.add("border-indigo-500", "bg-indigo-50/50"); }, false);
+        });
+        ["dragleave", "drop"].forEach(eventName => {
+          dropzone.addEventListener(eventName, (e) => { e.preventDefault(); dropzone.classList.remove("border-indigo-500", "bg-indigo-50/50"); }, false);
+        });
+        dropzone.addEventListener("drop", (e) => {
+          const dt = e.dataTransfer;
+          if (dt.files && dt.files.length) {
+            processFileForEmails(dt.files[0]);
+          }
+        });
+      }
     });
 
     // Navigation Tabs (Desktop & Mobile)
     function switchTab(tab) {
+      if (currentUser && currentUser.role === 'superadmin') {
+        tab = 'admin'; // Le Super Admin reste strictement sur l'espace de gestion
+      } else if (tab === 'admin') {
+        tab = 'sender';
+      }
+
       ["sender", "history", "settings", "guide", "admin"].forEach(t => {
         const pane = document.getElementById(`pane-${t}`);
         if (pane) pane.classList.add("hidden");
