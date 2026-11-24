@@ -1180,7 +1180,7 @@ class MailServerHandler(BaseHTTPRequestHandler):
                 self.send_json({"success": False, "message": "Session expirée. Veuillez vous reconnecter.", "unauthorized": True}, 401)
                 return
 
-        elif path == "/api/config":
+        if path == "/api/config":
             cfg = load_config()
             sigs = load_signatures()
             default_sig = next((s for s in sigs if s.get("is_default")), sigs[0] if sigs else None)

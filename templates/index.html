@@ -2847,7 +2847,14 @@
     async function updateCampaignStatus() {
       try {
         const res = await fetch("/api/status");
+        if (!res.ok) {
+          if (res.status === 401) {
+            window.location.href = "/login";
+          }
+          return;
+        }
         const status = await res.json();
+        if (!status) return;
 
         // Update counts
         const total = status.total || 0;
@@ -2883,20 +2890,23 @@
             title.textContent = "🎉 Campagne terminée avec succès !";
           } else if (status.should_stop) {
             title.textContent = "⏹️ Campagne interrompue.";
+          } else if (total === 0) {
+            title.textContent = "Prêt pour une nouvelle campagne";
           } else {
             title.textContent = "Campagne terminée.";
           }
-          if (!status.is_running && processed >= total) {
+          if (!status.is_running && (processed >= total || total === 0)) {
             clearInterval(pollInterval);
           }
         }
 
         // Render logs
         const logsContainer = document.getElementById("logs-container");
-        document.getElementById("logs-count").textContent = `${status.logs.length} entrée(s)`;
+        const logsList = Array.isArray(status.logs) ? status.logs : [];
+        document.getElementById("logs-count").textContent = `${logsList.length} entrée(s)`;
         
-        if (status.logs && status.logs.length) {
-          logsContainer.innerHTML = status.logs.slice().reverse().map(log => {
+        if (logsList.length > 0) {
+          logsContainer.innerHTML = logsList.slice().reverse().map(log => {
             let badge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">OK</span>`;
             if (log.status === "error") {
               badge = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">ÉCHEC</span>`;
@@ -2907,11 +2917,11 @@
             return `
               <div class="px-3 sm:px-4 py-2 flex items-center justify-between hover:bg-slate-50 transition gap-2">
                 <div class="flex items-center space-x-2 sm:space-x-3 min-w-0 truncate">
-                  <span class="text-slate-400 text-[10px] sm:text-[11px] flex-shrink-0">${log.time}</span>
-                  <span class="font-semibold text-slate-700 text-xs truncate max-w-[140px] xs:max-w-[200px] sm:max-w-none">${log.email}</span>
+                  <span class="text-slate-400 text-[10px] sm:text-[11px] flex-shrink-0">${log.time || ''}</span>
+                  <span class="font-semibold text-slate-700 text-xs truncate max-w-[140px] xs:max-w-[200px] sm:max-w-none">${log.email || ''}</span>
                 </div>
                 <div class="flex items-center space-x-2 sm:space-x-3 flex-shrink-0">
-                  <span class="text-[11px] text-slate-500 hidden md:inline truncate max-w-xs">${log.details}</span>
+                  <span class="text-[11px] text-slate-500 hidden md:inline truncate max-w-xs">${log.details || ''}</span>
                   ${badge}
                 </div>
               </div>
