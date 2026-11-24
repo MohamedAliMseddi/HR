@@ -1366,7 +1366,7 @@ class MailServerHandler(BaseHTTPRequestHandler):
             provider = data.get("provider") or cfg.get("provider", "brevo")
             sender_email = data.get("sender_email") or data.get("gmail_address") or cfg.get("sender_email") or cfg.get("gmail_address", "")
             sender_name = data.get("sender_name") or cfg.get("sender_name", "")
-            target = data.get("test_email", "")
+            raw_target = data.get("test_email", "")
             subject = data.get("subject", "Test MailStorm")
             content = data.get("content", "<p>Ceci est un email de test envoyé par <b>MailStorm</b>.</p>")
             
@@ -1376,59 +1376,75 @@ class MailServerHandler(BaseHTTPRequestHandler):
                 sig_html = sig if ("<" in sig and ">" in sig) else sig.replace("\n", "<br>")
                 content = f"{content}<br><br><div style='border-top:1px solid #e2e8f0;padding-top:12px;margin-top:20px;color:#475569;'>{sig_html}</div>"
 
-            if not target or "@" not in target:
+            # Parse single or multiple targets (separated by comma, semicolon, newline or spaces)
+            targets = [e.strip() for e in re.split(r"[,;\s\n\r]+", raw_target) if e.strip() and "@" in e.strip()]
+            if not targets:
                 self.send_json({"success": False, "message": "Adresse email de test invalide."})
                 return
 
-            test_attachments = []
             cert_config = data.get("certificate")
-            if cert_config and cert_config.get("enabled"):
-                try:
-                    rec_name = extract_recipient_name(target, {"email": target}, cert_config.get("name_var", ""))
-                    cert_att = generate_certificate_attachment(rec_name, cert_config, {"email": target}, target)
-                    if cert_att:
-                        test_attachments.append({
-                            "name": cert_att["name"],
-                            "data": cert_att["data"]
-                        })
-                except Exception as ce:
-                    print(f"Erreur certificat test-send: {ce}")
+            sent_count = 0
+            errors = []
 
-            try:
-                if provider == "brevo":
-                    key = data.get("brevo_api_key") or cfg.get("brevo_api_key", "")
-                    if not key:
-                        self.send_json({"success": False, "message": "Clé API Brevo manquante."})
-                        return
-                    if not sender_email:
-                        self.send_json({"success": False, "message": "Adresse email de l'expéditeur manquante."})
-                        return
-                    send_single_email_brevo(
-                        api_key=key,
-                        sender_email=sender_email,
-                        sender_name=sender_name,
-                        recipient=target,
-                        subject=f"[TEST] {subject}",
-                        content_html=content,
-                        attachments=test_attachments
-                    )
-                else:
-                    pwd = data.get("app_password") or cfg.get("app_password", "")
-                    if not sender_email or not pwd:
-                        self.send_json({"success": False, "message": "Identifiants Gmail manquants."})
-                        return
-                    send_single_email(
-                        sender_email=sender_email,
-                        app_password=pwd,
-                        sender_name=sender_name,
-                        recipient=target,
-                        subject=f"[TEST] {subject}",
-                        content_html=content,
-                        attachments=test_attachments
-                    )
-                self.send_json({"success": True, "message": f"Email de test envoyé avec succès à {target} !"})
-            except Exception as e:
-                self.send_json({"success": False, "message": f"Erreur lors du test : {str(e)}"})
+            for target in targets:
+                test_attachments = []
+                if cert_config and cert_config.get("enabled"):
+                    try:
+                        rec_name = extract_recipient_name(target, {"email": target}, cert_config.get("name_var", ""))
+                        cert_att = generate_certificate_attachment(rec_name, cert_config, {"email": target}, target)
+                        if cert_att:
+                            test_attachments.append({
+                                "name": cert_att["name"],
+                                "data": cert_att["data"]
+                            })
+                    except Exception as ce:
+                        print(f"Erreur certificat test-send pour {target}: {ce}")
+
+                try:
+                    if provider == "brevo":
+                        key = data.get("brevo_api_key") or cfg.get("brevo_api_key", "")
+                        if not key:
+                            self.send_json({"success": False, "message": "Clé API Brevo manquante."})
+                            return
+                        if not sender_email:
+                            self.send_json({"success": False, "message": "Adresse email de l'expéditeur manquante."})
+                            return
+                        send_single_email_brevo(
+                            api_key=key,
+                            sender_email=sender_email,
+                            sender_name=sender_name,
+                            recipient=target,
+                            subject=f"[TEST] {subject}",
+                            content_html=content,
+                            attachments=test_attachments,
+                            recipient_data={"email": target}
+                        )
+                    else:
+                        pwd = data.get("app_password") or cfg.get("app_password", "")
+                        if not sender_email or not pwd:
+                            self.send_json({"success": False, "message": "Identifiants Gmail manquants."})
+                            return
+                        send_single_email(
+                            sender_email=sender_email,
+                            app_password=pwd,
+                            sender_name=sender_name,
+                            recipient=target,
+                            subject=f"[TEST] {subject}",
+                            content_html=content,
+                            attachments=test_attachments,
+                            recipient_data={"email": target}
+                        )
+                    sent_count += 1
+                except Exception as e:
+                    errors.append(f"{target}: {str(e)}")
+
+            if sent_count == len(targets):
+                msg = f"Email de test envoyé individuellement avec succès à {targets[0]} !" if len(targets) == 1 else f"{sent_count} emails de test envoyés individuellement avec succès !"
+                self.send_json({"success": True, "message": msg})
+            elif sent_count > 0:
+                self.send_json({"success": True, "message": f"{sent_count}/{len(targets)} envoyés individuellement. Erreurs : {', '.join(errors)}"})
+            else:
+                self.send_json({"success": False, "message": f"Erreur lors du test : {'; '.join(errors)}"})
             return
 
         elif path == "/api/start-campaign":

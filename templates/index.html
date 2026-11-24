@@ -107,6 +107,12 @@
               </span>
             </div>
 
+            <!-- Guarantee individual sending notice -->
+            <div class="p-2.5 rounded-xl bg-emerald-50/80 border border-emerald-200/80 text-[11px] text-emerald-800 flex items-center space-x-2">
+              <span class="text-sm">🔒</span>
+              <span><b>Envoi 100% individuel & privé :</b> Chaque destinataire reçoit son propre email séparé (aucun CC, aucun autre contact visible, certificat unique personnalisé).</span>
+            </div>
+
             <!-- Contact Lists & Groups Quick Selector -->
             <div class="p-3 bg-slate-50 border border-slate-200/80 rounded-xl space-y-2">
               <div class="flex items-center justify-between">
@@ -985,11 +991,11 @@
         <button onclick="closeTestModal()" class="text-slate-400 hover:text-slate-600 text-2xl leading-none">&times;</button>
       </div>
       <p class="text-xs text-slate-500">
-        Vérifiez le rendu réel de votre email avant de lancer la grande campagne en envoyant un seul email à votre propre adresse.
+        Vérifiez le rendu réel avant d'envoyer la campagne. Vous pouvez tester avec un ou plusieurs emails séparés par une virgule (chacun recevra son email individuel).
       </p>
       <div>
-        <label class="block text-xs font-semibold text-slate-700 mb-1">Email destinataire du test :</label>
-        <input type="email" id="modal-test-target" class="w-full text-base sm:text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-500" placeholder="votre.email@gmail.com">
+        <label class="block text-xs font-semibold text-slate-700 mb-1">Email(s) destinataire(s) du test :</label>
+        <input type="text" id="modal-test-target" class="w-full text-base sm:text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-500" placeholder="votre.email@gmail.com ou email1@test.com, email2@test.com">
       </div>
       <div id="modal-test-feedback" class="hidden text-xs p-3 rounded-lg"></div>
       <div class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-2">
