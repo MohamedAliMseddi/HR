@@ -47,81 +47,71 @@ try:
 except ImportError:
     HAS_PIL = False
 
-# État global de l'envoi en cours
-campaign_state = {
-    "is_running": False,
-    "should_stop": False,
-    "total": 0,
-    "sent": 0,
-    "failed": 0,
-    "current_index": 0,
-    "current_email": "",
-    "logs": [],
-    "start_time": None,
-    "end_time": None
-}
+# Multi-tenant state dictionary : campaign_states[user_id]
+campaign_states = {}
 state_lock = threading.Lock()
 
-def load_config():
-    return database.db_load_config()
-
-def save_config(data):
-    return database.db_save_config(data)
-
-def load_history():
-    return database.db_load_history()
-
-def save_campaign_to_history(entry):
-    return database.db_save_campaign_to_history(entry)
-
-def load_contact_lists():
-    return database.db_load_contact_lists()
-
-def save_contact_lists(lists):
-    return database.db_save_contact_lists(lists)
-
-def load_scheduled_tasks():
-    return database.db_load_scheduled_tasks()
-
-def save_scheduled_tasks(tasks):
-    return database.db_save_scheduled_tasks(tasks)
-
-def load_custom_templates():
-    return database.db_load_custom_templates()
-
-def save_custom_templates(templates):
-    return database.db_save_custom_templates(templates)
-
-def save_signatures(signatures):
-    return database.db_save_signatures(signatures)
-
-def load_signatures():
-    sigs = database.db_load_signatures()
-    if not sigs:
-        default_sigs = [
-            {
-                "id": "sig-default",
-                "name": "Signature Professionnelle",
-                "content": """<div style="font-family: Arial, sans-serif; font-size: 13px; color: #334155; line-height: 1.5;">
-  <p style="margin: 0; font-size: 15px; font-weight: bold; color: #1e293b;">Mohamed Ali Mseddi</p>
-  <p style="margin: 2px 0 6px 0; color: #6366f1; font-weight: 600;">Responsable Partenariats & RH | EPIK Club</p>
-  <p style="margin: 0; color: #64748b; font-size: 12px;">📞 +216 00 000 000 | ✉️ contact@epikclub.com</p>
-  <p style="margin: 2px 0 0 0; color: #64748b; font-size: 12px;">🌐 <a href="https://epikclub.com" style="color: #6366f1; text-decoration: none; font-weight: 500;">epikclub.com</a> | 📍 Tunis, Tunisie</p>
-</div>""",
-                "is_default": True,
-                "created_at": time.strftime("%d/%m/%Y"),
-                "updated_at": time.strftime("%d/%m/%Y")
+def get_campaign_state(user_id=1):
+    with state_lock:
+        if user_id not in campaign_states:
+            campaign_states[user_id] = {
+                "is_running": False,
+                "should_stop": False,
+                "total": 0,
+                "sent": 0,
+                "failed": 0,
+                "current_index": 0,
+                "current_email": "",
+                "logs": [],
+                "start_time": None,
+                "end_time": None
             }
-        ]
-        database.db_save_signatures(default_sigs)
-        return default_sigs
-    return sigs
+        return campaign_states[user_id]
 
-def load_certificate_config():
-    return database.db_load_certificate_config()
+# Alias pour compatibilité
+campaign_state = get_campaign_state(1)
 
-def save_certificate_config(cfg):
-    return database.db_save_certificate_config(cfg)
+def load_config(user_id=1):
+    return database.db_load_config(user_id)
+
+def save_config(data, user_id=1):
+    return database.db_save_config(data, user_id)
+
+def load_history(user_id=1):
+    return database.db_load_history(user_id)
+
+def save_campaign_to_history(entry, user_id=1):
+    return database.db_save_campaign_to_history(entry, user_id)
+
+def load_contact_lists(user_id=1):
+    return database.db_load_contact_lists(user_id)
+
+def save_contact_lists(lists, user_id=1):
+    return database.db_save_contact_lists(lists, user_id)
+
+def load_scheduled_tasks(user_id=1):
+    return database.db_load_scheduled_tasks(user_id)
+
+def save_scheduled_tasks(tasks, user_id=1):
+    return database.db_save_scheduled_tasks(tasks, user_id)
+
+def load_custom_templates(user_id=1):
+    return database.db_load_custom_templates(user_id)
+
+def save_custom_templates(templates, user_id=1):
+    return database.db_save_custom_templates(templates, user_id)
+
+def save_signatures(signatures, user_id=1):
+    return database.db_save_signatures(signatures, user_id)
+
+def load_signatures(user_id=1):
+    return database.db_load_signatures(user_id)
+
+def load_certificate_config(user_id=1):
+    return database.db_load_certificate_config(user_id)
+
+def save_certificate_config(cfg, user_id=1):
+    return database.db_save_certificate_config(cfg, user_id)
 
 def get_best_font(preferred_style="serif", size=36, is_bold=False, is_italic=False):
     if not HAS_PIL:
@@ -881,19 +871,19 @@ def send_single_email(sender_email, app_password, sender_name, recipient, subjec
         server.login(sender_email, clean_password)
         server.send_message(msg)
 
-def worker_campaign(recipients, subject, content_html, provider, sender_email, sender_name, app_password, brevo_api_key, delay_seconds, attachments, cert_config=None):
-    global campaign_state
+def worker_campaign(recipients, subject, content_html, provider, sender_email, sender_name, app_password, brevo_api_key, delay_seconds, attachments, cert_config=None, user_id=1):
+    c_state = get_campaign_state(user_id)
     
     with state_lock:
-        campaign_state["is_running"] = True
-        campaign_state["should_stop"] = False
-        campaign_state["total"] = len(recipients)
-        campaign_state["sent"] = 0
-        campaign_state["failed"] = 0
-        campaign_state["current_index"] = 0
-        campaign_state["logs"] = []
-        campaign_state["start_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
-        campaign_state["end_time"] = None
+        c_state["is_running"] = True
+        c_state["should_stop"] = False
+        c_state["total"] = len(recipients)
+        c_state["sent"] = 0
+        c_state["failed"] = 0
+        c_state["current_index"] = 0
+        c_state["logs"] = []
+        c_state["start_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        c_state["end_time"] = None
 
     for idx, item in enumerate(recipients):
         if isinstance(item, dict):
@@ -907,16 +897,16 @@ def worker_campaign(recipients, subject, content_html, provider, sender_email, s
             continue
 
         with state_lock:
-            if campaign_state["should_stop"]:
-                campaign_state["logs"].append({
+            if c_state["should_stop"]:
+                c_state["logs"].append({
                     "time": time.strftime("%H:%M:%S"),
                     "email": "CAMPAGNE INTERROMPUE",
                     "status": "warning",
                     "details": "L'envoi a été arrêté par l'utilisateur."
                 })
                 break
-            campaign_state["current_index"] = idx + 1
-            campaign_state["current_email"] = recipient_email
+            c_state["current_index"] = idx + 1
+            c_state["current_email"] = recipient_email
 
         # Prepare attachments: static attachments + dynamic personalized certificate if enabled
         current_attachments = list(attachments) if attachments else []
@@ -965,16 +955,16 @@ def worker_campaign(recipients, subject, content_html, provider, sender_email, s
 
         with state_lock:
             if success:
-                campaign_state["sent"] += 1
-                campaign_state["logs"].append({
+                c_state["sent"] += 1
+                c_state["logs"].append({
                     "time": time.strftime("%H:%M:%S"),
                     "email": recipient_email,
                     "status": "success",
                     "details": f"Envoyé avec succès{cert_info_msg}"
                 })
             else:
-                campaign_state["failed"] += 1
-                campaign_state["logs"].append({
+                c_state["failed"] += 1
+                c_state["logs"].append({
                     "time": time.strftime("%H:%M:%S"),
                     "email": recipient_email,
                     "status": "error",
@@ -982,35 +972,34 @@ def worker_campaign(recipients, subject, content_html, provider, sender_email, s
                 })
 
         # Pause entre les emails pour éviter d'être bloqué par Gmail
-        if idx < len(recipients) - 1 and not campaign_state["should_stop"]:
+        if idx < len(recipients) - 1 and not c_state["should_stop"]:
             time.sleep(delay_seconds)
 
     with state_lock:
-        campaign_state["is_running"] = False
-        campaign_state["current_email"] = ""
-        campaign_state["end_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
-        tot = campaign_state["total"]
-        snt = campaign_state["sent"]
-        fld = campaign_state["failed"]
-        logs_snapshot = list(campaign_state["logs"])
-        start_t = campaign_state["start_time"]
-        end_t = campaign_state["end_time"]
+        c_state["is_running"] = False
+        c_state["current_email"] = ""
+        c_state["end_time"] = time.strftime("%Y-%m-%d %H:%M:%S")
+        tot = c_state["total"]
+        snt = c_state["sent"]
+        fld = c_state["failed"]
+        logs_snapshot = list(c_state["logs"])
+        start_t = c_state["start_time"]
+        end_t = c_state["end_time"]
 
-    # Sauvegarder automatiquement cette campagne dans l'historique
+    # Sauvegarder automatiquement cette campagne dans l'historique du club
     save_campaign_to_history({
         "id": str(uuid.uuid4())[:8],
         "start_time": start_t,
         "end_time": end_t,
-        "date_formatted": time.strftime("%d/%m/%Y à %H:%M"),
+        "date": time.strftime("%d/%m/%Y à %H:%M"),
         "subject": subject,
-        "content_html": content_html,
         "provider": provider,
         "total": tot,
         "sent": snt,
         "failed": fld,
-        "success_rate": round((snt / tot * 100), 1) if tot > 0 else 0,
+        "duration": "0s",
         "logs": logs_snapshot
-    })
+    }, user_id=user_id)
 
 
 def scheduler_daemon():
@@ -1180,37 +1169,44 @@ class MailServerHandler(BaseHTTPRequestHandler):
                 self.send_json({"success": False, "message": "Session expirée. Veuillez vous reconnecter.", "unauthorized": True}, 401)
                 return
 
+        uid = user["id"]
+
         if path == "/api/config":
-            cfg = load_config()
-            sigs = load_signatures()
+            cfg = load_config(uid)
+            sigs = load_signatures(uid)
             default_sig = next((s for s in sigs if s.get("is_default")), sigs[0] if sigs else None)
             default_sig_content = default_sig.get("content", "") if default_sig else cfg.get("email_signature", "")
             safe_cfg = {
                 "provider": cfg.get("provider", "brevo"),
-                "sender_email": cfg.get("sender_email") or cfg.get("gmail_address", ""),
-                "gmail_address": cfg.get("gmail_address", ""),
+                "sender_email": user.get("email", ""),
+                "gmail_address": user.get("email", ""),
                 "has_password": bool(cfg.get("app_password")),
                 "has_brevo_key": bool(cfg.get("brevo_api_key")),
-                "sender_name": cfg.get("sender_name", ""),
+                "sender_name": cfg.get("sender_name") or user.get("display_name") or user.get("club_name") or "",
                 "default_delay": cfg.get("default_delay", 2),
                 "email_signature": default_sig_content,
                 "include_signature": cfg.get("include_signature", True),
                 "signatures": sigs,
-                "default_signature_id": default_sig.get("id", "") if default_sig else ""
+                "default_signature_id": default_sig.get("id", "") if default_sig else "",
+                "user_role": user.get("role", "club"),
+                "club_name": user.get("club_name", ""),
+                "user_status": user.get("status", "active")
             }
             self.send_json(safe_cfg)
             return
 
         elif path == "/api/status":
+            c_state = get_campaign_state(uid)
             with state_lock:
-                copy_state = dict(campaign_state)
-                copy_state["logs"] = list(campaign_state["logs"])
+                copy_state = dict(c_state)
+                copy_state["logs"] = list(c_state["logs"])
             self.send_json(copy_state)
             return
 
         elif path == "/api/export-logs":
+            c_state = get_campaign_state(uid)
             with state_lock:
-                logs = list(campaign_state["logs"])
+                logs = list(c_state["logs"])
             csv_lines = ["Heure,Email,Statut,Détails"]
             for log in logs:
                 details = log.get('details', '').replace('"', '""')
@@ -1226,14 +1222,14 @@ class MailServerHandler(BaseHTTPRequestHandler):
             return
 
         elif path == "/api/history":
-            history = load_history()
+            history = load_history(uid)
             self.send_json({"success": True, "history": history})
             return
 
         elif path == "/api/history/export":
             query = parse_qs(parsed.query)
             camp_id = query.get("id", [""])[0]
-            history = load_history()
+            history = load_history(uid)
             target_camp = next((c for c in history if str(c.get("id")) == str(camp_id)), None)
             
             if not target_camp:
@@ -1258,28 +1254,36 @@ class MailServerHandler(BaseHTTPRequestHandler):
             return
 
         elif path == "/api/lists":
-            lists = load_contact_lists()
+            lists = load_contact_lists(uid)
             self.send_json({"success": True, "lists": lists})
             return
 
         elif path == "/api/schedule/list":
-            tasks = load_scheduled_tasks()
+            tasks = load_scheduled_tasks(uid)
             self.send_json({"success": True, "tasks": tasks})
             return
 
         elif path == "/api/templates":
-            templates = load_custom_templates()
+            templates = load_custom_templates(uid)
             self.send_json({"success": True, "templates": templates})
             return
 
         elif path == "/api/signatures":
-            signatures = load_signatures()
+            signatures = load_signatures(uid)
             self.send_json({"success": True, "signatures": signatures})
             return
 
         elif path == "/api/certificate/config":
-            cfg = load_certificate_config()
+            cfg = load_certificate_config(uid)
             self.send_json({"success": True, "config": cfg, "has_pil": HAS_PIL})
+            return
+
+        elif path == "/api/admin/clubs":
+            if user.get("role") != "superadmin":
+                self.send_json({"success": False, "message": "Accès réservé au Super Administrateur."}, 403)
+                return
+            clubs = database.db_get_all_clubs()
+            self.send_json({"success": True, "clubs": clubs})
             return
 
         self.send_error(404, "Page non trouvée")
@@ -1307,6 +1311,22 @@ class MailServerHandler(BaseHTTPRequestHandler):
             if not user:
                 self.send_json({"success": False, "message": "Identifiant ou mot de passe incorrect."})
                 return
+
+            if user.get("status") == "pending":
+                self.send_json({
+                    "success": False,
+                    "status_code": "pending",
+                    "message": "Votre compte est en attente d'activation. Veuillez contacter Mohamed Ali Mseddi pour valider votre paiement et activer votre accès."
+                })
+                return
+
+            if user.get("status") == "suspended":
+                self.send_json({
+                    "success": False,
+                    "status_code": "suspended",
+                    "message": "Votre compte club a été suspendu par l'administrateur. Veuillez le contacter pour régulariser votre abonnement."
+                })
+                return
             
             days = 30 if remember else 1
             token = database.create_user_session(user["id"], duration_days=days)
@@ -1319,9 +1339,17 @@ class MailServerHandler(BaseHTTPRequestHandler):
                     "id": user["id"], 
                     "username": user["username"], 
                     "display_name": user.get("display_name") or user["username"],
-                    "email": user.get("email") or ""
+                    "club_name": user.get("club_name") or user.get("display_name") or "",
+                    "email": user.get("email") or "",
+                    "role": user.get("role", "club"),
+                    "status": user.get("status", "active")
                 }
             }, set_cookie=cookie)
+            return
+
+        elif path == "/api/register":
+            success, msg = database.register_user(data)
+            self.send_json({"success": success, "message": msg})
             return
 
         elif path == "/api/logout":
@@ -1336,6 +1364,52 @@ class MailServerHandler(BaseHTTPRequestHandler):
         current_user = self.get_current_user()
         if not current_user:
             self.send_json({"success": False, "message": "Session expirée. Veuillez vous reconnecter.", "unauthorized": True}, 401)
+            return
+
+        uid = current_user["id"]
+
+        # Super Admin Management Endpoints
+        if path == "/api/admin/clubs/create":
+            if current_user.get("role") != "superadmin":
+                self.send_json({"success": False, "message": "Action réservée au Super Admin."}, 403)
+                return
+            success, msg = database.db_create_club_by_admin(data)
+            self.send_json({"success": success, "message": msg})
+            return
+
+        elif path == "/api/admin/clubs/status":
+            if current_user.get("role") != "superadmin":
+                self.send_json({"success": False, "message": "Action réservée au Super Admin."}, 403)
+                return
+            target_id = data.get("user_id")
+            new_status = data.get("status")
+            if not target_id or new_status not in ["active", "pending", "suspended"]:
+                self.send_json({"success": False, "message": "Données de mise à jour invalides."})
+                return
+            database.db_update_club_status(target_id, new_status)
+            self.send_json({"success": True, "message": f"Statut mis à jour ({new_status}) avec succès !"})
+            return
+
+        elif path == "/api/admin/clubs/password":
+            if current_user.get("role") != "superadmin":
+                self.send_json({"success": False, "message": "Action réservée au Super Admin."}, 403)
+                return
+            target_id = data.get("user_id")
+            new_pwd = data.get("new_password", "")
+            if not target_id or len(new_pwd) < 4:
+                self.send_json({"success": False, "message": "Le mot de passe doit comporter au moins 4 caractères."})
+                return
+            database.db_admin_reset_password(target_id, new_pwd)
+            self.send_json({"success": True, "message": "Mot de passe réinitialisé avec succès !"})
+            return
+
+        elif path == "/api/admin/clubs/delete":
+            if current_user.get("role") != "superadmin":
+                self.send_json({"success": False, "message": "Action réservée au Super Admin."}, 403)
+                return
+            target_id = data.get("user_id")
+            success, msg = database.db_delete_club(target_id)
+            self.send_json({"success": success, "message": msg})
             return
 
         if path == "/api/user/change-password":
@@ -1355,18 +1429,21 @@ class MailServerHandler(BaseHTTPRequestHandler):
             return
 
         if path == "/api/config":
-            save_config(data)
+            # 🔒 Strictly enforce: sender_email is ALWAYS the logged-in user's official email
+            data["sender_email"] = current_user["email"]
+            data["gmail_address"] = current_user["email"]
+            save_config(data, uid)
             if "email_signature" in data:
-                sigs = load_signatures()
+                sigs = load_signatures(uid)
                 if sigs:
                     def_sig = next((s for s in sigs if s.get("is_default")), sigs[0])
                     def_sig["content"] = data["email_signature"]
-                    save_signatures(sigs)
+                    save_signatures(sigs, uid)
             self.send_json({"success": True, "message": "Paramètres enregistrés avec succès !"})
             return
 
         elif path == "/api/test-connection":
-            cfg = load_config()
+            cfg = load_config(uid)
             provider = data.get("provider") or cfg.get("provider", "brevo")
             
             if provider == "brevo":
@@ -1378,7 +1455,7 @@ class MailServerHandler(BaseHTTPRequestHandler):
                 self.send_json({"success": ok, "message": msg})
                 return
             else:
-                gmail = data.get("gmail_address") or cfg.get("gmail_address", "")
+                gmail = current_user["email"]
                 pwd = data.get("app_password") or cfg.get("app_password", "")
                 if not gmail or not pwd:
                     self.send_json({"success": False, "message": "Veuillez renseigner votre email Gmail et votre mot de passe d'application."})
@@ -1388,10 +1465,10 @@ class MailServerHandler(BaseHTTPRequestHandler):
                 return
 
         elif path == "/api/test-send":
-            cfg = load_config()
+            cfg = load_config(uid)
             provider = data.get("provider") or cfg.get("provider", "brevo")
-            sender_email = data.get("sender_email") or data.get("gmail_address") or cfg.get("sender_email") or cfg.get("gmail_address", "")
-            sender_name = data.get("sender_name") or cfg.get("sender_name", "")
+            sender_email = current_user["email"]
+            sender_name = data.get("sender_name") or cfg.get("sender_name") or current_user.get("display_name") or current_user.get("club_name") or ""
             raw_target = data.get("test_email", "")
             subject = data.get("subject", "Test MailStorm")
             content = data.get("content", "<p>Ceci est un email de test envoyé par <b>MailStorm</b>.</p>")
@@ -1402,13 +1479,12 @@ class MailServerHandler(BaseHTTPRequestHandler):
                 sig_html = sig if ("<" in sig and ">" in sig) else sig.replace("\n", "<br>")
                 content = f"{content}<br><br><div style='border-top:1px solid #e2e8f0;padding-top:12px;margin-top:20px;color:#475569;'>{sig_html}</div>"
 
-            # Parse single or multiple targets (separated by comma, semicolon, newline or spaces)
             targets = [e.strip() for e in re.split(r"[,;\s\n\r]+", raw_target) if e.strip() and "@" in e.strip()]
             if not targets:
                 self.send_json({"success": False, "message": "Adresse email de test invalide."})
                 return
 
-            cert_config = data.get("certificate")
+            cert_config = data.get("certificate") or load_certificate_config(uid)
             sent_count = 0
             errors = []
 
@@ -1474,15 +1550,16 @@ class MailServerHandler(BaseHTTPRequestHandler):
             return
 
         elif path == "/api/start-campaign":
+            c_state = get_campaign_state(uid)
             with state_lock:
-                if campaign_state["is_running"]:
-                    self.send_json({"success": False, "message": "Une campagne est déjà en cours d'envoi."})
+                if c_state["is_running"]:
+                    self.send_json({"success": False, "message": "Une campagne est déjà en cours d'envoi pour votre compte."})
                     return
 
-            cfg = load_config()
+            cfg = load_config(uid)
             provider = data.get("provider") or cfg.get("provider", "brevo")
-            sender_email = data.get("sender_email") or data.get("gmail_address") or cfg.get("sender_email") or cfg.get("gmail_address", "")
-            sender_name = data.get("sender_name") or cfg.get("sender_name", "")
+            sender_email = current_user["email"]
+            sender_name = data.get("sender_name") or cfg.get("sender_name") or current_user.get("display_name") or current_user.get("club_name") or ""
             pwd = data.get("app_password") or cfg.get("app_password", "")
             brevo_key = data.get("brevo_api_key") or cfg.get("brevo_api_key", "")
             
@@ -1516,7 +1593,7 @@ class MailServerHandler(BaseHTTPRequestHandler):
 
             cert_config = data.get("certificate", {})
 
-            # Lancer le thread de campagne
+            # Lancer le thread de campagne dédié à ce club
             thread = threading.Thread(
                 target=worker_campaign,
                 kwargs={
@@ -1530,7 +1607,8 @@ class MailServerHandler(BaseHTTPRequestHandler):
                     "brevo_api_key": brevo_key,
                     "delay_seconds": delay,
                     "attachments": attachments,
-                    "cert_config": cert_config
+                    "cert_config": cert_config,
+                    "user_id": uid
                 },
                 daemon=True
             )
@@ -1540,33 +1618,24 @@ class MailServerHandler(BaseHTTPRequestHandler):
             return
 
         elif path == "/api/stop-campaign":
+            c_state = get_campaign_state(uid)
             with state_lock:
-                if campaign_state["is_running"]:
-                    campaign_state["should_stop"] = True
-                    self.send_json({"success": True, "message": "Arrêt en cours..."})
+                if c_state["is_running"]:
+                    c_state["should_stop"] = True
+                    self.send_json({"success": True, "message": "Arrêt de la campagne en cours..."})
                 else:
-                    self.send_json({"success": False, "message": "Aucune campagne n'est en cours."})
+                    self.send_json({"success": False, "message": "Aucune campagne n'est en cours pour votre compte."})
             return
 
         elif path == "/api/history/delete":
             camp_id = str(data.get("id", ""))
-            history = load_history()
-            new_history = [c for c in history if str(c.get("id")) != camp_id]
-            try:
-                with open(LOGS_FILE, "w", encoding="utf-8") as f:
-                    json.dump(new_history, f, indent=2, ensure_ascii=False)
-                self.send_json({"success": True, "message": "Campagne supprimée de l'historique."})
-            except Exception as e:
-                self.send_json({"success": False, "message": str(e)})
+            database.db_delete_history_item(camp_id, uid)
+            self.send_json({"success": True, "message": "Campagne supprimée de l'historique."})
             return
 
         elif path == "/api/history/clear":
-            try:
-                with open(LOGS_FILE, "w", encoding="utf-8") as f:
-                    json.dump([], f, indent=2)
-                self.send_json({"success": True, "message": "Historique effacé avec succès."})
-            except Exception as e:
-                self.send_json({"success": False, "message": str(e)})
+            database.db_clear_history(uid)
+            self.send_json({"success": True, "message": "Historique effacé avec succès."})
             return
 
         elif path == "/api/lists/save":
@@ -1580,7 +1649,7 @@ class MailServerHandler(BaseHTTPRequestHandler):
                 self.send_json({"success": False, "message": "La liste ne contient aucun contact valide."})
                 return
 
-            lists = load_contact_lists()
+            lists = load_contact_lists(uid)
             list_id = data.get("id") or str(uuid.uuid4())[:8]
             existing = next((l for l in lists if str(l.get("id")) == str(list_id)), None)
 
@@ -1600,7 +1669,7 @@ class MailServerHandler(BaseHTTPRequestHandler):
                 list_entry["created_at"] = time.strftime("%d/%m/%Y à %H:%M")
                 lists.insert(0, list_entry)
 
-            save_contact_lists(lists)
+            save_contact_lists(lists, uid)
             self.send_json({
                 "success": True, 
                 "message": f"Liste « {name} » ({len(contacts)} contacts) enregistrée avec succès !", 
@@ -1610,9 +1679,9 @@ class MailServerHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/lists/delete":
             list_id = str(data.get("id", ""))
-            lists = load_contact_lists()
+            lists = load_contact_lists(uid)
             lists = [l for l in lists if str(l.get("id")) != list_id]
-            save_contact_lists(lists)
+            save_contact_lists(lists, uid)
             self.send_json({"success": True, "message": "Liste supprimée avec succès."})
             return
 
@@ -1630,10 +1699,10 @@ class MailServerHandler(BaseHTTPRequestHandler):
             return
 
         elif path == "/api/schedule/create":
-            cfg = load_config()
+            cfg = load_config(uid)
             provider = data.get("provider") or cfg.get("provider", "brevo")
-            sender_email = data.get("sender_email") or data.get("gmail_address") or cfg.get("sender_email") or cfg.get("gmail_address", "")
-            sender_name = data.get("sender_name") or cfg.get("sender_name", "")
+            sender_email = current_user["email"]
+            sender_name = data.get("sender_name") or cfg.get("sender_name") or current_user.get("display_name") or current_user.get("club_name") or ""
             pwd = data.get("app_password") or cfg.get("app_password", "")
             brevo_key = data.get("brevo_api_key") or cfg.get("brevo_api_key", "")
             
@@ -1702,9 +1771,9 @@ class MailServerHandler(BaseHTTPRequestHandler):
                 "status": "pending"
             }
 
-            tasks = load_scheduled_tasks()
+            tasks = load_scheduled_tasks(uid)
             tasks.insert(0, task)
-            save_scheduled_tasks(tasks)
+            save_scheduled_tasks(tasks, uid)
             self.send_json({
                 "success": True, 
                 "message": f"Campagne programmée avec succès pour le {formatted_target} ({len(recipients)} destinataires) !", 
@@ -1714,14 +1783,14 @@ class MailServerHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/schedule/cancel":
             task_id = str(data.get("id", ""))
-            tasks = load_scheduled_tasks()
+            tasks = load_scheduled_tasks(uid)
             found = False
             for t in tasks:
                 if str(t.get("id")) == task_id and t.get("status") == "pending":
                     t["status"] = "cancelled"
                     t["cancelled_at"] = time.strftime("%d/%m/%Y à %H:%M")
                     found = True
-            save_scheduled_tasks(tasks)
+            save_scheduled_tasks(tasks, uid)
             if found:
                 self.send_json({"success": True, "message": "Campagne programmée annulée avec succès."})
             else:
@@ -1730,9 +1799,9 @@ class MailServerHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/schedule/delete":
             task_id = str(data.get("id", ""))
-            tasks = load_scheduled_tasks()
+            tasks = load_scheduled_tasks(uid)
             tasks = [t for t in tasks if str(t.get("id")) != task_id]
-            save_scheduled_tasks(tasks)
+            save_scheduled_tasks(tasks, uid)
             self.send_json({"success": True, "message": "Tâche supprimée."})
             return
 
@@ -1751,7 +1820,7 @@ class MailServerHandler(BaseHTTPRequestHandler):
                 self.send_json({"success": False, "message": "Le modèle doit comporter un sujet ou un contenu."})
                 return
 
-            templates = load_custom_templates()
+            templates = load_custom_templates(uid)
             existing = next((t for t in templates if str(t.get("id")) == str(tpl_id)), None)
 
             tpl_entry = {
@@ -1771,7 +1840,7 @@ class MailServerHandler(BaseHTTPRequestHandler):
                 tpl_entry["created_at"] = time.strftime("%d/%m/%Y à %H:%M")
                 templates.insert(0, tpl_entry)
 
-            save_custom_templates(templates)
+            save_custom_templates(templates, uid)
             self.send_json({
                 "success": True, 
                 "message": f"Modèle « {name} » enregistré avec succès !", 
@@ -1781,9 +1850,9 @@ class MailServerHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/templates/delete":
             tpl_id = str(data.get("id", ""))
-            templates = load_custom_templates()
+            templates = load_custom_templates(uid)
             templates = [t for t in templates if str(t.get("id")) != tpl_id]
-            save_custom_templates(templates)
+            save_custom_templates(templates, uid)
             self.send_json({"success": True, "message": "Modèle supprimé avec succès."})
             return
 
@@ -1800,7 +1869,7 @@ class MailServerHandler(BaseHTTPRequestHandler):
                 self.send_json({"success": False, "message": "Le contenu de la signature ne peut pas être vide."})
                 return
 
-            sigs = load_signatures()
+            sigs = load_signatures(uid)
             existing = next((s for s in sigs if str(s.get("id")) == str(sig_id)), None)
 
             if is_default or len(sigs) == 0:
@@ -1830,11 +1899,11 @@ class MailServerHandler(BaseHTTPRequestHandler):
             if not any(s.get("is_default") for s in sigs):
                 sigs[0]["is_default"] = True
 
-            save_signatures(sigs)
+            save_signatures(sigs, uid)
 
-            # Sync default signature with config.json
+            # Sync default signature with config
             def_sig = next((s for s in sigs if s.get("is_default")), sigs[0])
-            save_config({"email_signature": def_sig.get("content", "")})
+            save_config({"email_signature": def_sig.get("content", "")}, uid)
 
             self.send_json({
                 "success": True,
@@ -1846,7 +1915,7 @@ class MailServerHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/signatures/set-default":
             sig_id = str(data.get("id", ""))
-            sigs = load_signatures()
+            sigs = load_signatures(uid)
             target = next((s for s in sigs if str(s.get("id")) == sig_id), None)
             if not target:
                 self.send_json({"success": False, "message": "Signature introuvable."})
@@ -1855,8 +1924,8 @@ class MailServerHandler(BaseHTTPRequestHandler):
             for s in sigs:
                 s["is_default"] = (str(s.get("id")) == sig_id)
 
-            save_signatures(sigs)
-            save_config({"email_signature": target.get("content", "")})
+            save_signatures(sigs, uid)
+            save_config({"email_signature": target.get("content", "")}, uid)
 
             self.send_json({
                 "success": True,
@@ -1867,7 +1936,7 @@ class MailServerHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/signatures/delete":
             sig_id = str(data.get("id", ""))
-            sigs = load_signatures()
+            sigs = load_signatures(uid)
             target = next((s for s in sigs if str(s.get("id")) == sig_id), None)
             if not target:
                 self.send_json({"success": False, "message": "Signature introuvable."})
@@ -1881,9 +1950,9 @@ class MailServerHandler(BaseHTTPRequestHandler):
             sigs = [s for s in sigs if str(s.get("id")) != sig_id]
             if was_default and sigs:
                 sigs[0]["is_default"] = True
-                save_config({"email_signature": sigs[0].get("content", "")})
+                save_config({"email_signature": sigs[0].get("content", "")}, uid)
 
-            save_signatures(sigs)
+            save_signatures(sigs, uid)
             self.send_json({
                 "success": True,
                 "message": f"Signature « {target.get('name')} » supprimée.",
@@ -1892,7 +1961,7 @@ class MailServerHandler(BaseHTTPRequestHandler):
             return
 
         elif path == "/api/certificate/config":
-            save_certificate_config(data)
+            save_certificate_config(data, uid)
             self.send_json({"success": True, "message": "Configuration du certificat enregistrée avec succès !"})
             return
 

@@ -16,16 +16,16 @@
     }
   </style>
 </head>
-<body class="h-full flex items-center justify-center p-4 bg-slate-950 bg-grid-pattern relative overflow-hidden">
+<body class="min-h-full flex items-center justify-center p-4 bg-slate-950 bg-grid-pattern relative overflow-x-hidden">
 
   <!-- Ambient background glow -->
   <div class="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
   <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
 
-  <div class="w-full max-w-md relative z-10">
+  <div class="w-full max-w-md relative z-10 py-8">
 
     <!-- Card Container -->
-    <div class="bg-slate-900/90 border border-slate-800 shadow-2xl rounded-3xl p-8 backdrop-blur-xl space-y-6">
+    <div class="bg-slate-900/90 border border-slate-800 shadow-2xl rounded-3xl p-6 sm:p-8 backdrop-blur-xl space-y-6">
 
       <!-- Header Brand -->
       <div class="text-center space-y-2">
@@ -33,26 +33,47 @@
           ⚡
         </div>
         <h1 class="text-2xl font-black text-white tracking-tight">MailStorm Pro</h1>
-        <p class="text-xs text-slate-400 font-medium">Plateforme d'envoi d'emails & de certificats en masse</p>
+        <p class="text-xs text-slate-400 font-medium">Plateforme d'envoi d'emails & de certificats dédiée aux Clubs</p>
       </div>
 
-      <!-- Feedback Alert -->
-      <div id="login-error" class="hidden p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center space-x-2">
-        <span class="text-base">⚠️</span>
-        <span id="login-error-text">Identifiants incorrects</span>
+      <!-- Mode Switch Tabs -->
+      <div class="flex items-center p-1 rounded-xl bg-slate-950/80 border border-slate-800">
+        <button 
+          type="button" 
+          id="tab-btn-login"
+          onclick="switchMode('login')"
+          class="flex-1 py-2 text-xs font-bold rounded-lg transition bg-indigo-600 text-white shadow-sm">
+          Se Connecter
+        </button>
+        <button 
+          type="button" 
+          id="tab-btn-register"
+          onclick="switchMode('register')"
+          class="flex-1 py-2 text-xs font-medium text-slate-400 hover:text-white rounded-lg transition">
+          Inscrire mon Club ✨
+        </button>
       </div>
 
-      <!-- Login Form -->
+      <!-- Feedback Alert (Error or Status) -->
+      <div id="login-alert" class="hidden p-3.5 rounded-xl text-xs flex items-start space-x-2.5">
+        <span id="alert-icon" class="text-base flex-shrink-0">⚠️</span>
+        <div class="min-w-0">
+          <p id="alert-title" class="font-bold mb-0.5 text-xs"></p>
+          <p id="alert-text" class="text-[11px] leading-relaxed"></p>
+        </div>
+      </div>
+
+      <!-- ================= 1. LOGIN FORM ================= -->
       <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
         
         <div>
-          <label for="input-username" class="block text-xs font-semibold text-slate-300 mb-1.5">Identifiant ou Email</label>
+          <label for="input-username" class="block text-xs font-semibold text-slate-300 mb-1.5">Identifiant ou Email du Club</label>
           <div class="relative">
             <input 
               type="text" 
               id="input-username" 
               required 
-              placeholder="admin ou votre email" 
+              placeholder="Ex: epik_isims ou contact@club.com" 
               autocomplete="username"
               class="w-full text-sm font-medium bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
           </div>
@@ -72,7 +93,7 @@
               class="w-full text-sm font-medium bg-slate-950/80 border border-slate-800 rounded-xl pl-4 pr-11 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
             <button 
               type="button" 
-              onclick="togglePasswordVisibility()" 
+              onclick="togglePasswordVisibility('input-password')" 
               class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-sm p-1 transition"
               title="Afficher/masquer le mot de passe">
               👁️
@@ -91,51 +112,164 @@
         <!-- Submit Button -->
         <button 
           type="submit" 
-          id="btn-submit" 
+          id="btn-login-submit" 
           class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold text-sm shadow-lg shadow-indigo-600/25 transition flex items-center justify-center space-x-2 cursor-pointer mt-2">
-          <span>Se connecter</span>
-          <span id="btn-arrow">→</span>
+          <span>Accéder au Dashboard</span>
+          <span>→</span>
         </button>
 
       </form>
 
-      <!-- Default Credentials Hint Card -->
-      <div class="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-[11px] text-slate-400 space-y-1.5">
-        <div class="flex items-center space-x-1.5 text-indigo-400 font-semibold">
-          <span>🔑</span>
-          <span>Accès Initial Administrateur :</span>
+      <!-- ================= 2. REGISTER CLUB FORM ================= -->
+      <form id="form-register" onsubmit="handleRegister(event)" class="space-y-3.5 hidden">
+        
+        <div>
+          <label for="reg-club-name" class="block text-xs font-semibold text-slate-300 mb-1">Nom du Club / Organisation *</label>
+          <input 
+            type="text" 
+            id="reg-club-name" 
+            required 
+            placeholder="Ex: Club EPIK Leaders ISIMS" 
+            class="w-full text-xs font-medium bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
         </div>
-        <div class="flex items-center justify-between font-mono bg-slate-900/90 px-2.5 py-1.5 rounded-lg border border-slate-800 text-slate-300">
-          <span>Identifiant : <b class="text-white">admin</b></span>
-          <span>Mot de passe : <b class="text-white">admin123</b></span>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="reg-display-name" class="block text-xs font-semibold text-slate-300 mb-1">Nom du Responsable *</label>
+            <input 
+              type="text" 
+              id="reg-display-name" 
+              required 
+              placeholder="Ex: Mohamed Ali" 
+              class="w-full text-xs font-medium bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+          </div>
+          <div>
+            <label for="reg-username" class="block text-xs font-semibold text-slate-300 mb-1">Identifiant unique *</label>
+            <input 
+              type="text" 
+              id="reg-username" 
+              required 
+              placeholder="Ex: epik_isims" 
+              class="w-full text-xs font-medium bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+          </div>
         </div>
-        <p class="text-[10px] text-slate-500">
-          Vous pourrez personnaliser vos identifiants ou mot de passe à tout moment depuis les Paramètres.
-        </p>
-      </div>
+
+        <div>
+          <label for="reg-email" class="block text-xs font-semibold text-slate-300 mb-1">
+            Email officiel du Club *
+            <span class="text-[10px] text-indigo-400 font-normal">(Sera votre adresse d'envoi)</span>
+          </label>
+          <input 
+            type="email" 
+            id="reg-email" 
+            required 
+            placeholder="contact@epikclub.com" 
+            class="w-full text-xs font-medium bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label for="reg-phone" class="block text-xs font-semibold text-slate-300 mb-1">Téléphone / WhatsApp *</label>
+            <input 
+              type="tel" 
+              id="reg-phone" 
+              required 
+              placeholder="+216 00 000 000" 
+              class="w-full text-xs font-medium bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+          </div>
+          <div>
+            <label for="reg-password" class="block text-xs font-semibold text-slate-300 mb-1">Mot de passe *</label>
+            <input 
+              type="password" 
+              id="reg-password" 
+              required 
+              placeholder="••••••••" 
+              class="w-full text-xs font-medium bg-slate-950/80 border border-slate-800 rounded-xl px-3.5 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+          </div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-indigo-950/40 border border-indigo-800/60 text-[11px] text-indigo-300 space-y-1">
+          <p class="font-bold flex items-center gap-1.5">
+            <span>ℹ️</span> <span>Validation d'accès :</span>
+          </p>
+          <p class="text-[10px] text-indigo-300/80 leading-relaxed">
+            Une base de données SQLite 100% isolée sera créée pour votre club. Votre compte sera activé par l'administrateur dès confirmation du paiement.
+          </p>
+        </div>
+
+        <button 
+          type="submit" 
+          id="btn-reg-submit" 
+          class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 transition flex items-center justify-center space-x-2 cursor-pointer mt-2">
+          <span>Envoyer la demande d'inscription</span>
+          <span>✓</span>
+        </button>
+
+      </form>
 
       <!-- Footer DB Status -->
       <div class="pt-2 text-center text-[11px] text-slate-500 flex items-center justify-center space-x-2">
         <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-        <span>Base de données SQLite active & chiffrée</span>
+        <span>Architecture Multi-Tenant • Bases SQLite Isolées</span>
       </div>
 
     </div>
 
-    <!-- Copyright -->
-    <p class="text-center text-xs text-slate-500 mt-4 font-medium">
-      MailStorm Pro • Club Scientifique EPIK Leaders
-    </p>
+    <!-- Contact Developer -->
+    <div class="text-center space-y-1 text-xs text-slate-500 mt-4 font-medium">
+      <p>MailStorm Pro • Conçu & Développé par <b>Mohamed Ali Mseddi</b></p>
+      <p class="text-[11px] text-slate-600">Pour toute activation de licence ou assistance : contactez l'administrateur</p>
+    </div>
 
   </div>
 
   <script>
-    function togglePasswordVisibility() {
-      const input = document.getElementById("input-password");
-      if (input.type === "password") {
-        input.type = "text";
+    function switchMode(mode) {
+      const loginForm = document.getElementById("form-login");
+      const regForm = document.getElementById("form-register");
+      const tabLogin = document.getElementById("tab-btn-login");
+      const tabReg = document.getElementById("tab-btn-register");
+      const alertBox = document.getElementById("login-alert");
+
+      alertBox.classList.add("hidden");
+
+      if (mode === 'register') {
+        loginForm.classList.add("hidden");
+        regForm.classList.remove("hidden");
+        tabReg.className = "flex-1 py-2 text-xs font-bold rounded-lg transition bg-indigo-600 text-white shadow-sm";
+        tabLogin.className = "flex-1 py-2 text-xs font-medium text-slate-400 hover:text-white rounded-lg transition";
       } else {
-        input.type = "password";
+        regForm.classList.add("hidden");
+        loginForm.classList.remove("hidden");
+        tabLogin.className = "flex-1 py-2 text-xs font-bold rounded-lg transition bg-indigo-600 text-white shadow-sm";
+        tabReg.className = "flex-1 py-2 text-xs font-medium text-slate-400 hover:text-white rounded-lg transition";
+      }
+    }
+
+    function togglePasswordVisibility(id) {
+      const input = document.getElementById(id);
+      input.type = input.type === "password" ? "text" : "password";
+    }
+
+    function showAlert(type, title, message) {
+      const box = document.getElementById("login-alert");
+      const icon = document.getElementById("alert-icon");
+      const titleEl = document.getElementById("alert-title");
+      const textEl = document.getElementById("alert-text");
+
+      box.classList.remove("hidden");
+      titleEl.textContent = title;
+      textEl.textContent = message;
+
+      if (type === 'error') {
+        box.className = "p-3.5 rounded-xl text-xs flex items-start space-x-2.5 bg-rose-500/10 border border-rose-500/20 text-rose-300";
+        icon.textContent = "⚠️";
+      } else if (type === 'pending' || type === 'warning') {
+        box.className = "p-3.5 rounded-xl text-xs flex items-start space-x-2.5 bg-amber-500/15 border border-amber-500/30 text-amber-200";
+        icon.textContent = "⏳";
+      } else if (type === 'success') {
+        box.className = "p-3.5 rounded-xl text-xs flex items-start space-x-2.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-200";
+        icon.textContent = "🎉";
       }
     }
 
@@ -144,9 +278,7 @@
       const usernameInput = document.getElementById("input-username");
       const passwordInput = document.getElementById("input-password");
       const rememberChk = document.getElementById("chk-remember");
-      const btn = document.getElementById("btn-submit");
-      const errorBox = document.getElementById("login-error");
-      const errorText = document.getElementById("login-error-text");
+      const btn = document.getElementById("btn-login-submit");
 
       const username = usernameInput.value.trim();
       const password = passwordInput.value;
@@ -154,8 +286,8 @@
       if (!username || !password) return;
 
       btn.disabled = true;
-      btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg><span>Vérification...</span>`;
-      errorBox.classList.add("hidden");
+      btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg><span>Vérification des accès...</span>`;
+      document.getElementById("login-alert").classList.add("hidden");
 
       try {
         const res = await fetch("/api/login", {
@@ -170,21 +302,73 @@
 
         const data = await res.json();
         if (data.success) {
-          btn.innerHTML = `<span>✓ Connecté ! Redirection...</span>`;
+          btn.innerHTML = `<span>✓ Connecté ! Chargement de votre espace...</span>`;
           window.location.href = "/";
         } else {
-          errorBox.classList.remove("hidden");
-          errorText.textContent = data.message || "Identifiant ou mot de passe incorrect.";
           btn.disabled = false;
-          btn.innerHTML = `<span>Se connecter</span><span>→</span>`;
-          passwordInput.value = "";
-          passwordInput.focus();
+          btn.innerHTML = `<span>Accéder au Dashboard</span><span>→</span>`;
+          if (data.status_code === 'pending') {
+            showAlert('pending', "Compte en attente d'activation", data.message || "Veuillez contacter Mohamed Ali Mseddi pour valider votre paiement.");
+          } else if (data.status_code === 'suspended') {
+            showAlert('error', "Compte Suspendu", data.message || "Votre compte est actuellement suspendu.");
+          } else {
+            showAlert('error', "Échec de connexion", data.message || "Identifiant ou mot de passe incorrect.");
+            passwordInput.value = "";
+            passwordInput.focus();
+          }
         }
       } catch (err) {
-        errorBox.classList.remove("hidden");
-        errorText.textContent = "Erreur de connexion au serveur.";
         btn.disabled = false;
-        btn.innerHTML = `<span>Se connecter</span><span>→</span>`;
+        btn.innerHTML = `<span>Accéder au Dashboard</span><span>→</span>`;
+        showAlert('error', "Erreur Réseau", "Impossible de contacter le serveur MailStorm.");
+      }
+    }
+
+    async function handleRegister(e) {
+      e.preventDefault();
+      const clubName = document.getElementById("reg-club-name").value.trim();
+      const displayName = document.getElementById("reg-display-name").value.trim();
+      const username = document.getElementById("reg-username").value.trim();
+      const email = document.getElementById("reg-email").value.trim();
+      const phone = document.getElementById("reg-phone").value.trim();
+      const password = document.getElementById("reg-password").value;
+      const btn = document.getElementById("btn-reg-submit");
+
+      if (!clubName || !username || !email || !password) return;
+
+      btn.disabled = true;
+      btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg><span>Création de la base de données club...</span>`;
+      document.getElementById("login-alert").classList.add("hidden");
+
+      try {
+        const res = await fetch("/api/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            club_name: clubName,
+            display_name: displayName,
+            username: username,
+            email: email,
+            phone: phone,
+            password: password
+          })
+        });
+
+        const data = await res.json();
+        btn.disabled = false;
+        btn.innerHTML = `<span>Envoyer la demande d'inscription</span><span>✓</span>`;
+
+        if (data.success) {
+          showAlert('success', "Demande enregistrée avec succès !", data.message);
+          document.getElementById("form-register").reset();
+          setTimeout(() => switchMode('login'), 3500);
+        } else {
+          showAlert('error', "Erreur d'inscription", data.message || "Impossible de créer le compte.");
+        }
+      } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = `<span>Envoyer la demande d'inscription</span><span>✓</span>`;
+        showAlert('error', "Erreur Réseau", "Erreur lors de la communication avec le serveur.");
       }
     }
   </script>

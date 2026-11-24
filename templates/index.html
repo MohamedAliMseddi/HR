@@ -59,6 +59,11 @@
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M12 18h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
           <span>Guide</span>
         </button>
+        <!-- Super Admin Tab (Only for Mohamed Ali) -->
+        <button onclick="switchTab('admin')" id="tab-admin" class="tab-btn px-3 py-2 rounded-lg text-sm font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200/80 transition flex items-center space-x-1.5 hidden" title="Espace Super Admin">
+          <span>👑</span>
+          <span>Super Admin</span>
+        </button>
       </nav>
 
       <!-- User Profile & DB indicator in Header -->
@@ -651,20 +656,35 @@
             <input 
               type="text" 
               id="cfg-sender-name" 
-              placeholder="Ex: EPIK ISIMS / Mon Entreprise"
-              class="w-full text-base sm:text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition">
+              placeholder="Ex: Club EPIK Leaders / Responsable Partenariats"
+              class="w-full text-base sm:text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition font-medium">
+            <p class="text-[11px] text-slate-400 mt-1">Ce nom est automatiquement mémorisé pour toutes vos prochaines sessions.</p>
           </div>
 
-          <!-- Email de l'expéditeur -->
+          <!-- Email de l'expéditeur (Verrouillé au compte du Club) -->
           <div>
-            <label for="cfg-sender-email" class="block text-xs font-semibold text-slate-700 mb-1">
-              Adresse email de l'expéditeur
-            </label>
-            <input 
-              type="email" 
-              id="cfg-sender-email" 
-              placeholder="epikleadersisims@gmail.com"
-              class="w-full text-base sm:text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition">
+            <div class="flex items-center justify-between mb-1">
+              <label for="cfg-sender-email" class="block text-xs font-semibold text-slate-700">
+                Adresse email officielle de l'expéditeur
+              </label>
+              <span class="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-full">
+                🔒 Liée à votre compte Club
+              </span>
+            </div>
+            <div class="relative">
+              <input 
+                type="email" 
+                id="cfg-sender-email" 
+                readonly
+                placeholder="Votre email officiel..."
+                class="w-full text-base sm:text-sm px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-100 text-slate-700 font-semibold cursor-not-allowed outline-none select-none">
+              <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs" title="Cette adresse email ne peut pas être modifiée car elle est liée à votre licence officielle">
+                🔒
+              </span>
+            </div>
+            <p class="text-[11px] text-slate-500 mt-1">
+              Cette adresse correspond à l'email avec lequel vous vous êtes connecté. Elle garantit l'authenticité de vos envois et ne peut pas être falsifiée.
+            </p>
           </div>
 
           <!-- GROUP BREVO API -->
@@ -1014,7 +1034,229 @@
       </div>
     </div>
 
+    <!-- ==================== ONGLET SUPER ADMIN (POUR MOHAMED ALI) ==================== -->
+    <div id="pane-admin" class="hidden space-y-6">
+      
+      <!-- Top Banner -->
+      <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 rounded-3xl p-6 sm:p-8 text-white shadow-xl shadow-orange-500/10 relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 opacity-15 pointer-events-none text-9xl">👑</div>
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="space-y-1">
+            <div class="inline-flex items-center space-x-2 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold tracking-wider uppercase text-amber-100">
+              <span>⚡ Console Développeur</span>
+              <span>•</span>
+              <span>Mohamed Ali Mseddi</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-black tracking-tight">Super Admin & Gestion des Clubs</h1>
+            <p class="text-xs sm:text-sm text-white/90 font-medium max-w-xl">
+              Architecture multi-tenant avec base de données SQLite 100% isolée par club. Contrôlez les accès, validez les paiements et suivez les statistiques en temps réel.
+            </p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="fetchAdminClubs()" class="px-4 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 backdrop-blur-md text-white text-xs font-bold transition flex items-center space-x-1.5 cursor-pointer border border-white/20">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              <span>Actualiser</span>
+            </button>
+            <button onclick="openAddClubModal()" class="px-5 py-2.5 rounded-xl bg-white text-slate-900 hover:bg-amber-50 text-xs font-black shadow-lg transition flex items-center space-x-2 cursor-pointer">
+              <span>+</span>
+              <span>Ajouter un Club</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- KPI Metrics -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center space-x-4">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-2xl font-bold flex-shrink-0">🏢</div>
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Total Clubs</div>
+            <div id="adm-stat-total" class="text-2xl font-black text-slate-800">0</div>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center space-x-4">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl font-bold flex-shrink-0">✅</div>
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Clubs Actifs</div>
+            <div id="adm-stat-active" class="text-2xl font-black text-emerald-600">0</div>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-amber-200/80 bg-amber-50/30 shadow-sm flex items-center space-x-4">
+          <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-2xl font-bold flex-shrink-0">⏳</div>
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-amber-800">En Attente (Paiement)</div>
+            <div id="adm-stat-pending" class="text-2xl font-black text-amber-600">0</div>
+          </div>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm flex items-center space-x-4">
+          <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center text-2xl font-bold flex-shrink-0">🚀</div>
+          <div>
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-400">Emails Envoyés Total</div>
+            <div id="adm-stat-sent" class="text-2xl font-black text-purple-600">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search & Filters -->
+      <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div class="relative flex-1">
+          <input 
+            type="text" 
+            id="admin-search-input" 
+            oninput="filterAdminClubs()"
+            placeholder="Rechercher par nom de club, responsable, identifiant ou email..." 
+            class="w-full text-xs font-medium pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 transition"
+          >
+          <svg class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        </div>
+        <div class="flex items-center space-x-2">
+          <select 
+            id="admin-filter-status" 
+            onchange="filterAdminClubs()"
+            class="text-xs font-bold text-slate-700 px-3 py-2.5 rounded-xl border border-slate-200 bg-white outline-none focus:border-indigo-500 cursor-pointer"
+          >
+            <option value="all">Tous les statuts</option>
+            <option value="pending">⏳ En attente de paiement</option>
+            <option value="active">✅ Actifs</option>
+            <option value="suspended">⛔ Suspendus</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Clubs Table / List -->
+      <div class="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+          <h2 class="text-sm font-bold text-slate-800 flex items-center space-x-2">
+            <span>Liste des Comptes Clubs & Abonnements</span>
+            <span id="adm-clubs-badge-count" class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-bold">0</span>
+          </h2>
+          <span class="text-xs text-slate-400 font-medium hidden sm:inline">Bases SQLite : <code class="font-mono text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">tenants/club_{id}.db</code></span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-50/80 border-b border-slate-100 text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              <tr>
+                <th class="py-3 px-4">Club & Responsable</th>
+                <th class="py-3 px-4">Email Officiel (Verrouillé)</th>
+                <th class="py-3 px-4">Téléphone / WhatsApp</th>
+                <th class="py-3 px-4">Base Données & Usage</th>
+                <th class="py-3 px-4">Statut Abonnement</th>
+                <th class="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="adm-clubs-tbody" class="divide-y divide-slate-100 font-medium">
+              <tr>
+                <td colspan="6" class="py-12 text-center text-slate-400">
+                  Chargement des clubs...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+
   </main>
+
+  <!-- MODAL: ADMIN - AJOUTER UN CLUB -->
+  <div id="modal-add-club" class="hidden fixed inset-0 z-55 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-100 space-y-4 my-8">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="font-bold text-slate-800 text-base flex items-center space-x-2">
+          <span class="w-8 h-8 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center text-sm font-bold">🏢</span>
+          <span>Créer un Compte Club & sa Base Dédiée</span>
+        </h3>
+        <button onclick="closeAddClubModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold leading-none cursor-pointer">&times;</button>
+      </div>
+
+      <form onsubmit="adminCreateClub(event)" class="space-y-3.5 text-xs">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Nom du Club : *</label>
+            <input type="text" id="adm-new-clubname" required placeholder="ex: EPIK Leaders" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 font-medium">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Nom du Responsable :</label>
+            <input type="text" id="adm-new-dispname" placeholder="ex: Iheb Jammel" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 font-medium">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Identifiant de connexion : *</label>
+            <input type="text" id="adm-new-username" required placeholder="ex: epik_isims" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 font-medium">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Mot de passe : *</label>
+            <input type="password" id="adm-new-password" required minlength="4" placeholder="••••••••" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 font-medium">
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Email Officiel du Club (Verrouillé comme expéditeur) : *</label>
+          <input type="email" id="adm-new-email" required placeholder="ex: contact@epikclub.com" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 font-medium">
+          <p class="text-[11px] text-slate-400 mt-1">🔒 Le club ne pourra envoyer des emails que depuis cette adresse.</p>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Téléphone / WhatsApp :</label>
+            <input type="text" id="adm-new-phone" placeholder="ex: +216 20 000 000" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 font-medium">
+          </div>
+          <div>
+            <label class="block font-semibold text-slate-700 mb-1">Statut Initial :</label>
+            <select id="adm-new-status" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 font-bold bg-white cursor-pointer">
+              <option value="active">✅ Actif (Paiement validé)</option>
+              <option value="pending">⏳ En attente (Non payé)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-semibold text-slate-700 mb-1">Notes internes (Privé admin) :</label>
+          <input type="text" id="adm-new-notes" placeholder="ex: Pack 1 an payé le 24/11 - Mandat D17" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 outline-none focus:border-indigo-500 font-medium">
+        </div>
+
+        <div id="adm-create-msg" class="hidden p-3 rounded-xl text-xs font-semibold"></div>
+
+        <div class="flex items-center justify-end space-x-2 pt-3 border-t border-slate-100">
+          <button type="button" onclick="closeAddClubModal()" class="px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer">Annuler</button>
+          <button type="submit" id="btn-adm-create-submit" class="px-5 py-2.5 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-xl shadow-md transition cursor-pointer">Créer le Club</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: ADMIN - REINITIALISER MOT DE PASSE -->
+  <div id="modal-admin-reset-pwd" class="hidden fixed inset-0 z-55 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl border border-slate-100 space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+        <h3 class="font-bold text-slate-800 text-sm flex items-center space-x-2">
+          <span class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center text-xs">🔑</span>
+          <span>Changer le MDP d'un Club</span>
+        </h3>
+        <button onclick="closeAdminResetModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold leading-none cursor-pointer">&times;</button>
+      </div>
+      <form onsubmit="adminSubmitPasswordReset(event)" class="space-y-3">
+        <input type="hidden" id="adm-reset-uid">
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Club concerné :</label>
+          <div id="adm-reset-clubname-display" class="font-bold text-xs text-indigo-700 bg-indigo-50 p-2.5 rounded-xl"></div>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-700 mb-1">Nouveau mot de passe :</label>
+          <input type="password" id="adm-reset-newpwd" required minlength="4" placeholder="Nouveau mot de passe" class="w-full text-xs font-medium px-3.5 py-2.5 rounded-xl border border-slate-200 focus:border-indigo-500 outline-none">
+        </div>
+        <div id="adm-reset-msg" class="hidden text-xs p-2.5 rounded-xl"></div>
+        <div class="flex items-center justify-end space-x-2 pt-2">
+          <button type="button" onclick="closeAdminResetModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition cursor-pointer">Annuler</button>
+          <button type="submit" id="btn-adm-reset-submit" class="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-sm transition cursor-pointer">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- MODAL: CHANGE PASSWORD -->
   <div id="modal-change-password" class="hidden fixed inset-0 z-55 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
@@ -1822,6 +2064,10 @@
       <svg class="w-5 h-5 mb-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M12 18h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
       <span class="text-[10px]">Guide</span>
     </button>
+    <button onclick="switchTab('admin')" id="mobile-tab-admin" class="flex-1 flex flex-col items-center justify-center py-1 rounded-xl text-amber-600 font-bold transition hidden">
+      <span class="text-base mb-0.5">👑</span>
+      <span class="text-[10px]">Admin</span>
+    </button>
   </nav>
 
   <!-- JAVASCRIPT LOGIC -->
@@ -1850,7 +2096,19 @@
           currentUser = data.user;
           const navUser = document.getElementById("nav-user-name");
           if (navUser) {
-            navUser.textContent = data.user.display_name || data.user.username;
+            let label = data.user.display_name || data.user.username;
+            if (data.user.role === 'superadmin') {
+              label += ' 👑 (Super Admin)';
+            } else if (data.user.club_name) {
+              label += ` (${data.user.club_name})`;
+            }
+            navUser.textContent = label;
+          }
+          if (data.user.role === 'superadmin') {
+            const adminTab = document.getElementById("tab-admin");
+            const mobileAdminTab = document.getElementById("mobile-tab-admin");
+            if (adminTab) adminTab.classList.remove("hidden");
+            if (mobileAdminTab) mobileAdminTab.classList.remove("hidden");
           }
           return true;
         } else {
@@ -1971,22 +2229,32 @@
 
     // Navigation Tabs (Desktop & Mobile)
     function switchTab(tab) {
-      ["sender", "history", "settings", "guide"].forEach(t => {
+      ["sender", "history", "settings", "guide", "admin"].forEach(t => {
         const pane = document.getElementById(`pane-${t}`);
         if (pane) pane.classList.add("hidden");
         
         // Desktop Tabs
         const btn = document.getElementById(`tab-${t}`);
         if (btn) {
-          btn.classList.remove("bg-indigo-50", "text-indigo-700", "font-semibold");
-          btn.classList.add("text-slate-600", "font-medium");
+          if (t === 'admin') {
+            btn.classList.remove("bg-amber-100", "text-amber-800", "font-black");
+            btn.classList.add("bg-amber-50", "text-amber-700", "font-bold");
+          } else {
+            btn.classList.remove("bg-indigo-50", "text-indigo-700", "font-semibold");
+            btn.classList.add("text-slate-600", "font-medium");
+          }
         }
 
         // Mobile Bottom Bar Tabs
         const mBtn = document.getElementById(`mobile-tab-${t}`);
         if (mBtn) {
-          mBtn.classList.remove("text-indigo-600", "font-bold");
-          mBtn.classList.add("text-slate-400", "font-medium");
+          if (t === 'admin') {
+            mBtn.classList.remove("text-amber-700", "font-black");
+            mBtn.classList.add("text-amber-600", "font-bold");
+          } else {
+            mBtn.classList.remove("text-indigo-600", "font-bold");
+            mBtn.classList.add("text-slate-400", "font-medium");
+          }
         }
       });
 
@@ -1995,18 +2263,30 @@
       
       const activeBtn = document.getElementById(`tab-${tab}`);
       if (activeBtn) {
-        activeBtn.classList.add("bg-indigo-50", "text-indigo-700", "font-semibold");
-        activeBtn.classList.remove("text-slate-600", "font-medium");
+        if (tab === 'admin') {
+          activeBtn.classList.remove("bg-amber-50", "text-amber-700", "font-bold");
+          activeBtn.classList.add("bg-amber-100", "text-amber-800", "font-black");
+        } else {
+          activeBtn.classList.add("bg-indigo-50", "text-indigo-700", "font-semibold");
+          activeBtn.classList.remove("text-slate-600", "font-medium");
+        }
       }
 
       const activeMBtn = document.getElementById(`mobile-tab-${tab}`);
       if (activeMBtn) {
-        activeMBtn.classList.add("text-indigo-600", "font-bold");
-        activeMBtn.classList.remove("text-slate-400", "font-medium");
+        if (tab === 'admin') {
+          activeMBtn.classList.remove("text-amber-600", "font-bold");
+          activeMBtn.classList.add("text-amber-700", "font-black");
+        } else {
+          activeMBtn.classList.add("text-indigo-600", "font-bold");
+          activeMBtn.classList.remove("text-slate-400", "font-medium");
+        }
       }
 
       if (tab === 'history') {
         fetchHistory();
+      } else if (tab === 'admin') {
+        fetchAdminClubs();
       }
 
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2133,8 +2413,10 @@
         const prov = savedConfig.provider || "brevo";
         setProvider(prov);
 
-        document.getElementById("cfg-sender-name").value = savedConfig.sender_name || "";
-        document.getElementById("cfg-sender-email").value = savedConfig.sender_email || savedConfig.gmail_address || "";
+        const fallbackName = (typeof currentUser !== 'undefined' && currentUser) ? (currentUser.club_name || currentUser.display_name || "") : "";
+        const fallbackEmail = (typeof currentUser !== 'undefined' && currentUser) ? (currentUser.email || "") : "";
+        document.getElementById("cfg-sender-name").value = savedConfig.sender_name || fallbackName;
+        document.getElementById("cfg-sender-email").value = savedConfig.sender_email || savedConfig.gmail_address || fallbackEmail;
         
         if (savedConfig.has_brevo_key) {
           document.getElementById("cfg-brevo-key").placeholder = "•••••••••••••••• (Clé enregistrée)";
@@ -4754,6 +5036,373 @@
       } finally {
         btn.disabled = false;
         btn.classList.remove("opacity-75");
+      }
+    }
+
+    // ==========================================
+    // SUPER ADMIN / GESTION DES CLUBS (MOHAMED ALI)
+    // ==========================================
+    let adminClubsList = [];
+
+    async function fetchAdminClubs() {
+      const tbody = document.getElementById("adm-clubs-tbody");
+      if (tbody && adminClubsList.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-12 text-center text-slate-400">
+              <div class="inline-block animate-spin text-xl mb-1">⏳</div>
+              <div>Chargement des clubs en cours...</div>
+            </td>
+          </tr>
+        `;
+      }
+
+      try {
+        const res = await fetch("/api/admin/clubs");
+        if (res.status === 403) {
+          alert("Accès réservé au Super Administrateur.");
+          switchTab('sender');
+          return;
+        }
+        const data = await res.json();
+        adminClubsList = data.clubs || [];
+        updateAdminKPIs(adminClubsList);
+        filterAdminClubs();
+      } catch (err) {
+        console.error("Erreur chargement clubs:", err);
+      }
+    }
+
+    function updateAdminKPIs(clubs) {
+      const total = clubs.length;
+      const active = clubs.filter(c => c.status === 'active').length;
+      const pending = clubs.filter(c => c.status === 'pending').length;
+      const totalSent = clubs.reduce((acc, c) => acc + (c.total_sent || 0), 0);
+
+      const elTotal = document.getElementById("adm-stat-total");
+      const elActive = document.getElementById("adm-stat-active");
+      const elPending = document.getElementById("adm-stat-pending");
+      const elSent = document.getElementById("adm-stat-sent");
+      const elBadge = document.getElementById("adm-clubs-badge-count");
+
+      if (elTotal) elTotal.textContent = total;
+      if (elActive) elActive.textContent = active;
+      if (elPending) elPending.textContent = pending;
+      if (elSent) elSent.textContent = totalSent.toLocaleString();
+      if (elBadge) elBadge.textContent = total;
+    }
+
+    function filterAdminClubs() {
+      const search = (document.getElementById("admin-search-input")?.value || "").toLowerCase().trim();
+      const statusFilter = document.getElementById("admin-filter-status")?.value || "all";
+
+      const filtered = adminClubsList.filter(club => {
+        const matchesStatus = statusFilter === 'all' || club.status === statusFilter;
+        const matchesSearch = !search ||
+          (club.club_name && club.club_name.toLowerCase().includes(search)) ||
+          (club.display_name && club.display_name.toLowerCase().includes(search)) ||
+          (club.username && club.username.toLowerCase().includes(search)) ||
+          (club.email && club.email.toLowerCase().includes(search)) ||
+          (club.phone && club.phone.toLowerCase().includes(search));
+        return matchesStatus && matchesSearch;
+      });
+
+      renderAdminClubs(filtered);
+    }
+
+    function renderAdminClubs(clubs) {
+      const tbody = document.getElementById("adm-clubs-tbody");
+      if (!tbody) return;
+
+      if (!clubs || clubs.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="py-12 text-center text-slate-400">
+              Aucun club trouvé avec ces critères de recherche.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = clubs.map(club => {
+        const isSuper = club.role === 'superadmin';
+        
+        // Status Badge
+        let statusBadge = '';
+        if (club.status === 'active') {
+          statusBadge = '<span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200"><span>✅</span><span>Actif (Payé)</span></span>';
+        } else if (club.status === 'pending') {
+          statusBadge = '<span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-200 animate-pulse"><span>⏳</span><span>En attente (Non payé)</span></span>';
+        } else {
+          statusBadge = '<span class="inline-flex items-center space-x-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-200"><span>⛔</span><span>Suspendu</span></span>';
+        }
+
+        // WhatsApp link if phone present
+        let phoneHtml = '<span class="text-slate-400 italic">Non renseigné</span>';
+        if (club.phone) {
+          const cleanPhone = club.phone.replace(/[^0-9+]/g, '');
+          phoneHtml = `
+            <div class="flex items-center space-x-1.5">
+              <span>${club.phone}</span>
+              <a href="https://wa.me/${cleanPhone.replace('+', '')}" target="_blank" title="Contacter sur WhatsApp" class="text-emerald-700 hover:text-emerald-800 font-bold bg-emerald-50 hover:bg-emerald-100 px-1.5 py-0.5 rounded text-[11px] border border-emerald-200 transition">
+                WhatsApp 💬
+              </a>
+            </div>
+          `;
+        }
+
+        // Action Buttons
+        let actionsHtml = '';
+        if (isSuper) {
+          actionsHtml = '<span class="text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-lg border border-amber-200">Compte Principal (Vous)</span>';
+        } else {
+          // Status toggle button
+          let statusBtn = '';
+          if (club.status === 'pending') {
+            statusBtn = `
+              <button onclick="updateClubStatus(${club.id}, 'active')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-sm transition flex items-center space-x-1 cursor-pointer" title="Valider paiement et activer le compte">
+                <span>✅ Valider Paiement</span>
+              </button>
+            `;
+          } else if (club.status === 'active') {
+            statusBtn = `
+              <button onclick="updateClubStatus(${club.id}, 'suspended')" class="px-2 py-1 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600 font-bold text-[11px] border border-slate-200 transition cursor-pointer" title="Suspendre l'accès">
+                <span>Suspendre</span>
+              </button>
+            `;
+          } else {
+            statusBtn = `
+              <button onclick="updateClubStatus(${club.id}, 'active')" class="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-sm transition cursor-pointer" title="Réactiver le compte">
+                <span>Réactiver</span>
+              </button>
+            `;
+          }
+
+          const resetBtn = `
+            <button onclick="openAdminResetPassword(${club.id}, '${escapeQuotes(club.club_name || club.username)}')" class="px-2 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] border border-indigo-200 transition cursor-pointer" title="Changer mot de passe">
+              <span>🔑 MDP</span>
+            </button>
+          `;
+
+          const deleteBtn = `
+            <button onclick="adminDeleteClub(${club.id}, '${escapeQuotes(club.club_name || club.username)}')" class="p-1 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition cursor-pointer" title="Supprimer définitivement">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
+          `;
+
+          actionsHtml = `
+            <div class="flex items-center justify-end space-x-1.5">
+              ${statusBtn}
+              ${resetBtn}
+              ${deleteBtn}
+            </div>
+          `;
+        }
+
+        const clubTitle = club.club_name || club.display_name || club.username;
+        const roleBadge = isSuper ? '<span class="ml-1.5 text-[10px] font-black uppercase text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-200">👑 Super Admin</span>' : '';
+
+        return `
+          <tr class="hover:bg-slate-50/70 transition">
+            <td class="py-3.5 px-4">
+              <div class="font-bold text-slate-900 text-xs flex items-center">
+                <span>${clubTitle}</span>
+                ${roleBadge}
+              </div>
+              <div class="text-[11px] text-slate-500 mt-0.5">
+                Resp: <span class="font-medium text-slate-700">${club.display_name || '-'}</span> 
+                • Identifiant: <code class="font-mono text-indigo-600">${club.username}</code>
+              </div>
+              ${club.notes ? `<div class="text-[10px] text-amber-700 bg-amber-50/80 px-2 py-0.5 rounded mt-1 inline-block border border-amber-200/60 font-medium">📝 ${club.notes}</div>` : ''}
+            </td>
+            <td class="py-3.5 px-4 font-mono text-[11px] text-slate-700">
+              <div class="flex items-center space-x-1">
+                <span>🔒</span>
+                <span class="font-semibold">${club.email}</span>
+              </div>
+            </td>
+            <td class="py-3.5 px-4">
+              ${phoneHtml}
+            </td>
+            <td class="py-3.5 px-4">
+              <div class="space-y-0.5">
+                <div class="flex items-center space-x-1">
+                  <span class="text-xs">💾</span>
+                  <code class="text-[11px] font-mono text-indigo-700 font-bold bg-indigo-50 px-1.5 py-0.5 rounded">club_${club.id}.db</code>
+                </div>
+                <div class="text-[11px] text-slate-500">
+                  <span class="font-bold text-slate-700">${club.campaigns_count || 0}</span> campagnes • 
+                  <span class="font-bold text-purple-600">${club.total_sent || 0}</span> emails
+                </div>
+              </div>
+            </td>
+            <td class="py-3.5 px-4">
+              ${statusBadge}
+            </td>
+            <td class="py-3.5 px-4 text-right">
+              ${actionsHtml}
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function escapeQuotes(str) {
+      if (!str) return '';
+      return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+
+    async function updateClubStatus(userId, status) {
+      const actionText = status === 'active' ? 'activer ce club' : 'suspendre ce club';
+      if (!confirm(`Voulez-vous vraiment ${actionText} ?`)) return;
+
+      try {
+        const res = await fetch("/api/admin/clubs/status", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ user_id: userId, status: status })
+        });
+        const data = await res.json();
+        if (data.success) {
+          await fetchAdminClubs();
+        } else {
+          alert("Erreur: " + data.message);
+        }
+      } catch (e) {
+        alert("Erreur de communication avec le serveur.");
+      }
+    }
+
+    function openAddClubModal() {
+      const modal = document.getElementById("modal-add-club");
+      if (modal) {
+        modal.classList.remove("hidden");
+        document.getElementById("adm-new-clubname").value = "";
+        document.getElementById("adm-new-dispname").value = "";
+        document.getElementById("adm-new-username").value = "";
+        document.getElementById("adm-new-password").value = "";
+        document.getElementById("adm-new-email").value = "";
+        document.getElementById("adm-new-phone").value = "";
+        document.getElementById("adm-new-notes").value = "";
+        const msg = document.getElementById("adm-create-msg");
+        if (msg) msg.className = "hidden";
+      }
+    }
+
+    function closeAddClubModal() {
+      const modal = document.getElementById("modal-add-club");
+      if (modal) modal.classList.add("hidden");
+    }
+
+    async function adminCreateClub(e) {
+      e.preventDefault();
+      const btn = document.getElementById("btn-adm-create-submit");
+      const msg = document.getElementById("adm-create-msg");
+      btn.disabled = true;
+      btn.textContent = "Création de la base de données...";
+
+      const payload = {
+        club_name: document.getElementById("adm-new-clubname").value.trim(),
+        display_name: document.getElementById("adm-new-dispname").value.trim(),
+        username: document.getElementById("adm-new-username").value.trim(),
+        password: document.getElementById("adm-new-password").value,
+        email: document.getElementById("adm-new-email").value.trim(),
+        phone: document.getElementById("adm-new-phone").value.trim(),
+        status: document.getElementById("adm-new-status").value,
+        notes: document.getElementById("adm-new-notes").value.trim()
+      };
+
+      try {
+        const res = await fetch("/api/admin/clubs/create", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          msg.className = "p-3 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 block";
+          msg.textContent = "✅ " + data.message;
+          setTimeout(() => {
+            closeAddClubModal();
+            fetchAdminClubs();
+          }, 1200);
+        } else {
+          msg.className = "p-3 rounded-xl text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200 block";
+          msg.textContent = "❌ " + data.message;
+        }
+      } catch (err) {
+        msg.className = "p-3 rounded-xl text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200 block";
+        msg.textContent = "❌ Erreur de connexion.";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Créer le Club";
+      }
+    }
+
+    function openAdminResetPassword(userId, clubName) {
+      document.getElementById("adm-reset-uid").value = userId;
+      document.getElementById("adm-reset-clubname-display").textContent = clubName;
+      document.getElementById("adm-reset-newpwd").value = "";
+      const msg = document.getElementById("adm-reset-msg");
+      if (msg) msg.className = "hidden";
+      document.getElementById("modal-admin-reset-pwd").classList.remove("hidden");
+    }
+
+    function closeAdminResetModal() {
+      document.getElementById("modal-admin-reset-pwd").classList.add("hidden");
+    }
+
+    async function adminSubmitPasswordReset(e) {
+      e.preventDefault();
+      const userId = parseInt(document.getElementById("adm-reset-uid").value);
+      const newPwd = document.getElementById("adm-reset-newpwd").value;
+      const msg = document.getElementById("adm-reset-msg");
+
+      try {
+        const res = await fetch("/api/admin/clubs/password", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ user_id: userId, new_password: newPwd })
+        });
+        const data = await res.json();
+        if (data.success) {
+          msg.className = "p-2.5 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 block";
+          msg.textContent = "✅ Mot de passe mis à jour !";
+          setTimeout(() => {
+            closeAdminResetModal();
+          }, 1200);
+        } else {
+          msg.className = "p-2.5 rounded-xl text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200 block";
+          msg.textContent = "❌ " + data.message;
+        }
+      } catch (err) {
+        msg.className = "p-2.5 rounded-xl text-xs font-semibold bg-rose-50 text-rose-800 border border-rose-200 block";
+        msg.textContent = "❌ Erreur serveur.";
+      }
+    }
+
+    async function adminDeleteClub(userId, clubName) {
+      const confirmName = prompt(`⚠️ ATTENTION : Vous êtes sur le point de supprimer DÉFINITIVEMENT le club "${clubName}" et TOUTES ses données (contacts, modèles, historique).\n\nPour confirmer, tapez SUPPRIMER :`);
+      if (confirmName !== "SUPPRIMER") {
+        return;
+      }
+
+      try {
+        const res = await fetch("/api/admin/clubs/delete", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({ user_id: userId })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert("✅ Club et sa base de données supprimés avec succès.");
+          fetchAdminClubs();
+        } else {
+          alert("Erreur: " + data.message);
+        }
+      } catch (e) {
+        alert("Erreur de connexion avec le serveur.");
       }
     }
   </script>
