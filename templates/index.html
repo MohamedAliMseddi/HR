@@ -1418,9 +1418,16 @@
           <!-- 2. Choice of Template -->
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1.5">1. Choisissez le Modèle de Certificat :</label>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <label class="cursor-pointer border-2 rounded-xl p-2.5 text-center transition flex flex-col items-center justify-between space-y-1 hover:border-indigo-400 border-indigo-600 bg-indigo-50/20" id="card-tpl-prestige">
-                <input type="radio" name="cert_template_choice" value="prestige" class="sr-only" onchange="onCertTemplateSelected('prestige')" checked>
+            <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              <label class="cursor-pointer border-2 rounded-xl p-2.5 text-center transition flex flex-col items-center justify-between space-y-1 border-indigo-600 bg-indigo-50/30 shadow-2xs" id="card-tpl-epik_leaders">
+                <input type="radio" name="cert_template_choice" value="epik_leaders" class="sr-only" onchange="onCertTemplateSelected('epik_leaders')" checked>
+                <span class="text-2xl">🌟</span>
+                <span class="text-xs font-bold text-slate-800">EPIK Officiel</span>
+                <span class="text-[10px] text-amber-600 font-semibold">Création Contenu</span>
+              </label>
+
+              <label class="cursor-pointer border-2 rounded-xl p-2.5 text-center transition flex flex-col items-center justify-between space-y-1 hover:border-indigo-400 border-slate-200" id="card-tpl-prestige">
+                <input type="radio" name="cert_template_choice" value="prestige" class="sr-only" onchange="onCertTemplateSelected('prestige')">
                 <span class="text-2xl">🏆</span>
                 <span class="text-xs font-bold text-slate-800">Prestige Or</span>
                 <span class="text-[10px] text-slate-500">Bleu nuit & Or</span>
@@ -1446,6 +1453,12 @@
                 <span class="text-xs font-bold text-slate-800">Mon Canva</span>
                 <span class="text-[10px] text-slate-500">Image perso</span>
               </label>
+            </div>
+
+            <!-- Official EPIK Leaders banner -->
+            <div id="cert-epik-official-badge" class="mt-2 p-2.5 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-900 text-xs flex items-start space-x-2">
+              <span class="text-base">✨</span>
+              <div><b>Modèle Officiel EPIK Leaders & ISIMS :</b> Certificat officiel de formation <i>Création de Contenu</i> avec signatures de <b>Iheb Jammel</b> & <b>Mohamed Ali Mseddi</b>. MailStorm génère le nom de chaque participant sur la ligne dorée.</div>
             </div>
           </div>
 
@@ -3691,7 +3704,7 @@
       if (chk) chk.checked = isEnabled;
       if (modalChk) modalChk.checked = isEnabled;
 
-      const tpl = certificateConfig.template_type || "prestige";
+      const tpl = certificateConfig.template_type || "epik_leaders";
       onCertTemplateSelected(tpl, false);
 
       const nameVar = document.getElementById("cert-name-var");
@@ -3759,8 +3772,9 @@
       const fmt = document.getElementById("cert-summary-format");
       const nvar = document.getElementById("cert-summary-namevar");
 
-      const tpl = certificateConfig.template_type || "prestige";
+      const tpl = certificateConfig.template_type || "epik_leaders";
       const tplNames = {
+        epik_leaders: "🌟 EPIK Création Contenu",
         prestige: "🏆 Prestige Or",
         modern_tech: "⚡ EPIK Tech",
         classic: "📜 Académique",
@@ -3797,6 +3811,7 @@
       }
 
       const cardIds = {
+        epik_leaders: "card-tpl-epik_leaders",
         prestige: "card-tpl-prestige",
         modern_tech: "card-tpl-modern_tech",
         classic: "card-tpl-classic",
@@ -3814,10 +3829,39 @@
         }
       }
 
+      const epikBadge = document.getElementById("cert-epik-official-badge");
+      if (epikBadge) {
+        if (tpl === "epik_leaders") epikBadge.classList.remove("hidden");
+        else epikBadge.classList.add("hidden");
+      }
+
       const customSection = document.getElementById("cert-custom-bg-section");
       if (customSection) {
         if (tpl === "custom") customSection.classList.remove("hidden");
         else customSection.classList.add("hidden");
+      }
+
+      // If switching to epik_leaders, offer tuned defaults
+      if (tpl === "epik_leaders" && triggerRefresh) {
+        const posY = document.getElementById("cert-pos-y");
+        const posYVal = document.getElementById("cert-pos-y-val");
+        const fontSize = document.getElementById("cert-font-size");
+        const fontSizeVal = document.getElementById("cert-font-size-val");
+        const fontColor = document.getElementById("cert-font-color");
+        const fontColorHex = document.getElementById("cert-font-color-hex");
+
+        if (posY && posYVal && (posY.value == 48 || posY.value == "48")) {
+          posY.value = 45;
+          posYVal.textContent = "45%";
+        }
+        if (fontSize && fontSizeVal && (fontSize.value == 48 || fontSize.value == "48")) {
+          fontSize.value = 38;
+          fontSizeVal.textContent = "38px";
+        }
+        if (fontColor && fontColorHex && fontColor.value === "#0f172a") {
+          fontColor.value = "#110b07";
+          fontColorHex.value = "#110b07";
+        }
       }
 
       if (triggerRefresh) {

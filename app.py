@@ -34,6 +34,7 @@ SCHEDULED_FILE = os.path.join(os.path.dirname(__file__), "scheduled_tasks.json")
 TEMPLATES_FILE = os.path.join(os.path.dirname(__file__), "custom_templates.json")
 SIGNATURES_FILE = os.path.join(os.path.dirname(__file__), "signatures.json")
 CERTIFICATE_CONFIG_FILE = os.path.join(os.path.dirname(__file__), "certificate_config.json")
+EPIK_CERTIFICATE_TEMPLATE = os.path.join(os.path.dirname(__file__), "templates", "cert_epik_creation_contenu.png")
 
 try:
     from PIL import Image, ImageDraw, ImageFont
@@ -219,16 +220,16 @@ def load_certificate_config():
             pass
     return {
         "enabled": False,
-        "template_type": "prestige",
+        "template_type": "epik_leaders",
         "output_format": "pdf",
         "name_var": "",
-        "event_title": "Formation Développement Web & IA 2026",
-        "subtitle": "En reconnaissance de sa participation active et de son investissement remarquable.",
-        "issuer_name": "EPIK ISIMS Club",
-        "date_str": "",
-        "font_color": "#0f172a",
-        "font_size": 48,
-        "name_y_pct": 48,
+        "event_title": "Formation Création de Contenu",
+        "subtitle": "En reconnaissance de sa participation active et assidue à la session de formation :",
+        "issuer_name": "Club Scientifique EPIK Leaders & ISIMS",
+        "date_str": "23 Novembre 2026",
+        "font_color": "#110b07",
+        "font_size": 38,
+        "name_y_pct": 45.3,
         "custom_bg_base64": "",
         "filename_pattern": "Certificat_{Nom}.pdf"
     }
@@ -240,27 +241,97 @@ def save_certificate_config(cfg):
     except Exception as e:
         print(f"Erreur sauvegarde config certificat: {e}")
 
-def get_best_font(preferred_style="serif", size=36):
+def get_best_font(preferred_style="serif", size=36, is_bold=False, is_italic=False):
     if not HAS_PIL:
         return None
-    serif_candidates = [
+    
+    if preferred_style == "serif":
+        if is_bold and is_italic:
+            candidates = [
+                "C:/Windows/Fonts/georgiaz.ttf",
+                "C:/Windows/Fonts/timesbi.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSerif-BoldItalic.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationSerif-BoldItalic.ttf",
+                "/usr/share/fonts/truetype/freefont/FreeSerifBoldItalic.ttf",
+                "C:/Windows/Fonts/georgiai.ttf",
+                "C:/Windows/Fonts/timesi.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Italic.ttf",
+                "C:/Windows/Fonts/georgia.ttf",
+                "C:/Windows/Fonts/times.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf"
+            ]
+        elif is_italic:
+            candidates = [
+                "C:/Windows/Fonts/georgiai.ttf",
+                "C:/Windows/Fonts/timesi.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Italic.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationSerif-Italic.ttf",
+                "/usr/share/fonts/truetype/freefont/FreeSerifItalic.ttf",
+                "C:/Windows/Fonts/georgiaz.ttf",
+                "C:/Windows/Fonts/georgia.ttf",
+                "C:/Windows/Fonts/times.ttf"
+            ]
+        elif is_bold:
+            candidates = [
+                "C:/Windows/Fonts/georgiab.ttf",
+                "C:/Windows/Fonts/timesbd.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSerif-Bold.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationSerif-Bold.ttf",
+                "C:/Windows/Fonts/georgia.ttf",
+                "C:/Windows/Fonts/times.ttf"
+            ]
+        else:
+            candidates = [
+                "C:/Windows/Fonts/georgia.ttf",
+                "C:/Windows/Fonts/times.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf",
+                "/usr/share/fonts/truetype/freefont/FreeSerif.ttf"
+            ]
+    else:  # sans
+        if is_bold and is_italic:
+            candidates = [
+                "C:/Windows/Fonts/arialbi.ttf",
+                "C:/Windows/Fonts/calibriz.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-BoldOblique.ttf",
+                "C:/Windows/Fonts/ariali.ttf",
+                "C:/Windows/Fonts/arial.ttf"
+            ]
+        elif is_bold:
+            candidates = [
+                "C:/Windows/Fonts/arialbd.ttf",
+                "C:/Windows/Fonts/calibrib.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+                "C:/Windows/Fonts/arial.ttf"
+            ]
+        elif is_italic:
+            candidates = [
+                "C:/Windows/Fonts/ariali.ttf",
+                "C:/Windows/Fonts/calibrii.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans-Oblique.ttf",
+                "C:/Windows/Fonts/arial.ttf"
+            ]
+        else:
+            candidates = [
+                "C:/Windows/Fonts/arial.ttf",
+                "C:/Windows/Fonts/calibri.ttf",
+                "C:/Windows/Fonts/segoeui.ttf",
+                "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+                "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+            ]
+    
+    # Fallback cascade
+    fallbacks = [
+        "C:/Windows/Fonts/georgiaz.ttf",
         "C:/Windows/Fonts/georgia.ttf",
         "C:/Windows/Fonts/times.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf",
-        "/usr/share/fonts/truetype/freefont/FreeSerif.ttf"
-    ]
-    sans_candidates = [
         "C:/Windows/Fonts/arial.ttf",
-        "C:/Windows/Fonts/calibri.ttf",
-        "C:/Windows/Fonts/segoeui.ttf",
-        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-        "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf"
+        "/usr/share/fonts/truetype/dejavu/DejaVuSerif.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
     ]
-    candidates = serif_candidates if preferred_style == "serif" else sans_candidates
-    candidates = candidates + sans_candidates + serif_candidates
+    all_candidates = candidates + [f for f in fallbacks if f not in candidates]
 
-    for path in candidates:
+    for path in all_candidates:
         if os.path.exists(path):
             try:
                 return ImageFont.truetype(path, size)
@@ -351,7 +422,14 @@ def generate_certificate_attachment(recipient_name, cert_config, recipient_data=
             subtitle = pattern.sub(str(v or ""), subtitle)
             issuer_name = pattern.sub(str(v or ""), issuer_name)
 
-    if template_type == "custom" and custom_bg_b64:
+    if template_type == "epik_leaders" and os.path.exists(EPIK_CERTIFICATE_TEMPLATE):
+        try:
+            img = Image.open(EPIK_CERTIFICATE_TEMPLATE).convert("RGB")
+            width, height = img.size
+        except Exception as e:
+            print(f"Erreur chargement template epik: {e}")
+            img = Image.new("RGB", (width, height), "#ffffff")
+    elif template_type == "custom" and custom_bg_b64:
         try:
             clean_b64 = custom_bg_b64.split(",")[-1]
             raw_bg = base64.b64decode(clean_b64)
@@ -447,14 +525,18 @@ def generate_certificate_attachment(recipient_name, cert_config, recipient_data=
     target_x = int(width * 0.5)
 
     current_size = base_font_size
-    name_font = get_best_font("serif" if template_type in ("prestige", "classic") else "sans", current_size)
-    while current_size > 20:
-        name_font = get_best_font("serif" if template_type in ("prestige", "classic") else "sans", current_size)
-        bbox = draw.textbbox((target_x, target_y), recipient_name, font=name_font, anchor="mm")
-        if (bbox[2] - bbox[0]) <= (width - 220):
-            break
-        current_size -= 4
+    is_epik = (template_type == "epik_leaders")
+    font_pref = "serif" if template_type in ("prestige", "classic", "epik_leaders") else "sans"
+    max_text_w = (width - 340) if is_epik else (width - 220)
 
+    while current_size > 18:
+        name_font = get_best_font(font_pref, current_size, is_bold=True if is_epik else False, is_italic=True if is_epik else False)
+        bbox = draw.textbbox((target_x, target_y), recipient_name, font=name_font, anchor="mm")
+        if (bbox[2] - bbox[0]) <= max_text_w:
+            break
+        current_size -= 2
+
+    name_font = get_best_font(font_pref, current_size, is_bold=True if is_epik else False, is_italic=True if is_epik else False)
     draw.text((target_x, target_y), recipient_name, fill=font_color, font=name_font, anchor="mm")
 
     if template_type in ("prestige", "modern_tech"):
