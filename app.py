@@ -26,6 +26,10 @@ from email import encoders
 from email.utils import make_msgid, formatdate
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
+import database
+
+# Initialiser la base de données SQLite et migrer les données
+database.init_db()
 
 PORT = int(os.environ.get("PORT", 5000))
 CONFIG_FILE = os.path.join(os.path.dirname(__file__), "config.json")
@@ -59,188 +63,65 @@ campaign_state = {
 state_lock = threading.Lock()
 
 def load_config():
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return {}
-    return {
-        "provider": "brevo",
-        "sender_email": "",
-        "gmail_address": "",
-        "app_password": "",
-        "brevo_api_key": "",
-        "sender_name": "",
-        "default_delay": 2,
-        "email_signature": "",
-        "include_signature": True
-    }
+    return database.db_load_config()
 
 def save_config(data):
-    current = load_config()
-    current.update(data)
-    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-        json.dump(current, f, indent=2, ensure_ascii=False)
+    return database.db_save_config(data)
 
 def load_history():
-    if os.path.exists(LOGS_FILE):
-        try:
-            with open(LOGS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return []
-    return []
+    return database.db_load_history()
 
 def save_campaign_to_history(entry):
-    history = load_history()
-    history.insert(0, entry)
-    history = history[:50]  # Conserver les 50 dernières campagnes
-    try:
-        with open(LOGS_FILE, "w", encoding="utf-8") as f:
-            json.dump(history, f, indent=2, ensure_ascii=False)
-    except Exception as e:
-        print(f"Erreur sauvegarde historique: {e}")
+    return database.db_save_campaign_to_history(entry)
 
 def load_contact_lists():
-    if os.path.exists(LISTS_FILE):
-        try:
-            with open(LISTS_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return []
-    return []
+    return database.db_load_contact_lists()
 
 def save_contact_lists(lists):
-    try:
-        with open(LISTS_FILE, "w", encoding="utf-8") as f:
-            json.dump(lists, f, indent=2, ensure_ascii=False)
-    except Exception as e:
-        print(f"Erreur sauvegarde listes: {e}")
+    return database.db_save_contact_lists(lists)
 
 def load_scheduled_tasks():
-    if os.path.exists(SCHEDULED_FILE):
-        try:
-            with open(SCHEDULED_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return []
-    return []
+    return database.db_load_scheduled_tasks()
 
 def save_scheduled_tasks(tasks):
-    try:
-        with open(SCHEDULED_FILE, "w", encoding="utf-8") as f:
-            json.dump(tasks, f, indent=2, ensure_ascii=False)
-    except Exception as e:
-        print(f"Erreur sauvegarde tâches programmées: {e}")
+    return database.db_save_scheduled_tasks(tasks)
 
 def load_custom_templates():
-    if os.path.exists(TEMPLATES_FILE):
-        try:
-            with open(TEMPLATES_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            return []
-    return []
+    return database.db_load_custom_templates()
 
 def save_custom_templates(templates):
-    try:
-        with open(TEMPLATES_FILE, "w", encoding="utf-8") as f:
-            json.dump(templates, f, indent=2, ensure_ascii=False)
-    except Exception as e:
-        print(f"Erreur sauvegarde modèles personnalisés: {e}")
+    return database.db_save_custom_templates(templates)
 
 def save_signatures(signatures):
-    try:
-        with open(SIGNATURES_FILE, "w", encoding="utf-8") as f:
-            json.dump(signatures, f, indent=2, ensure_ascii=False)
-    except Exception as e:
-        print(f"Erreur sauvegarde signatures: {e}")
+    return database.db_save_signatures(signatures)
 
 def load_signatures():
-    if os.path.exists(SIGNATURES_FILE):
-        try:
-            with open(SIGNATURES_FILE, "r", encoding="utf-8") as f:
-                sigs = json.load(f)
-                if isinstance(sigs, list) and len(sigs) > 0:
-                    return sigs
-        except Exception:
-            pass
-
-    # Migration from config.json or default presets initialization
-    cfg = load_config()
-    existing_sig = (cfg.get("email_signature") or "").strip()
-    default_sigs = []
-
-    if existing_sig:
-        default_sigs.append({
-            "id": "sig-migrated",
-            "name": "Signature Actuelle",
-            "content": existing_sig,
-            "is_default": True,
-            "created_at": time.strftime("%d/%m/%Y à %H:%M"),
-            "updated_at": time.strftime("%d/%m/%Y à %H:%M")
-        })
-    else:
-        default_sigs.append({
-            "id": "sig-default",
-            "name": "Signature Professionnelle",
-            "content": """<div style="font-family: Arial, sans-serif; font-size: 13px; color: #334155; line-height: 1.5;">
+    sigs = database.db_load_signatures()
+    if not sigs:
+        default_sigs = [
+            {
+                "id": "sig-default",
+                "name": "Signature Professionnelle",
+                "content": """<div style="font-family: Arial, sans-serif; font-size: 13px; color: #334155; line-height: 1.5;">
   <p style="margin: 0; font-size: 15px; font-weight: bold; color: #1e293b;">Mohamed Ali Mseddi</p>
   <p style="margin: 2px 0 6px 0; color: #6366f1; font-weight: 600;">Responsable Partenariats & RH | EPIK Club</p>
   <p style="margin: 0; color: #64748b; font-size: 12px;">📞 +216 00 000 000 | ✉️ contact@epikclub.com</p>
   <p style="margin: 2px 0 0 0; color: #64748b; font-size: 12px;">🌐 <a href="https://epikclub.com" style="color: #6366f1; text-decoration: none; font-weight: 500;">epikclub.com</a> | 📍 Tunis, Tunisie</p>
 </div>""",
-            "is_default": True,
-            "created_at": time.strftime("%d/%m/%Y à %H:%M"),
-            "updated_at": time.strftime("%d/%m/%Y à %H:%M")
-        })
-
-    default_sigs.append({
-        "id": "sig-minimal",
-        "name": "Signature Personnelle / Courte",
-        "content": """<p style="font-family: Arial, sans-serif; font-size: 13px; color: #475569; margin: 0;">
-  Bien cordialement,<br>
-  <strong>Mohamed Ali</strong><br>
-  <span style="font-size: 11px; color: #94a3b8;">Envoyé via MailStorm</span>
-</p>""",
-        "is_default": False,
-        "created_at": time.strftime("%d/%m/%Y à %H:%M"),
-        "updated_at": time.strftime("%d/%m/%Y à %H:%M")
-    })
-
-    save_signatures(default_sigs)
-    return default_sigs
+                "is_default": True,
+                "created_at": time.strftime("%d/%m/%Y"),
+                "updated_at": time.strftime("%d/%m/%Y")
+            }
+        ]
+        database.db_save_signatures(default_sigs)
+        return default_sigs
+    return sigs
 
 def load_certificate_config():
-    if os.path.exists(CERTIFICATE_CONFIG_FILE):
-        try:
-            with open(CERTIFICATE_CONFIG_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return {
-        "enabled": False,
-        "template_type": "epik_leaders",
-        "output_format": "pdf",
-        "name_var": "",
-        "event_title": "Formation Création de Contenu",
-        "subtitle": "En reconnaissance de sa participation active et assidue à la session de formation :",
-        "issuer_name": "Club Scientifique EPIK Leaders & ISIMS",
-        "date_str": "23 Novembre 2026",
-        "font_color": "#110b07",
-        "font_size": 38,
-        "name_y_pct": 45.3,
-        "custom_bg_base64": "",
-        "filename_pattern": "Certificat_{Nom}.pdf"
-    }
+    return database.db_load_certificate_config()
 
 def save_certificate_config(cfg):
-    try:
-        with open(CERTIFICATE_CONFIG_FILE, "w", encoding="utf-8") as f:
-            json.dump(cfg, f, indent=2, ensure_ascii=False)
-    except Exception as e:
-        print(f"Erreur sauvegarde config certificat: {e}")
+    return database.db_save_certificate_config(cfg)
 
 def get_best_font(preferred_style="serif", size=36, is_bold=False, is_italic=False):
     if not HAS_PIL:
@@ -1202,12 +1083,38 @@ class MailServerHandler(BaseHTTPRequestHandler):
         # Silence normal request logs in console to keep terminal clean
         return
 
-    def send_json(self, data, status_code=200):
+    def get_cookie(self, name):
+        cookie_header = self.headers.get("Cookie", "")
+        if not cookie_header:
+            return None
+        for item in cookie_header.split(";"):
+            parts = item.strip().split("=")
+            if len(parts) == 2 and parts[0].strip() == name:
+                return parts[1].strip()
+        return None
+
+    def get_current_user(self):
+        token = self.get_cookie("mailstorm_session")
+        if not token:
+            return None
+        return database.get_user_by_session(token)
+
+    def redirect_to(self, url, set_cookie=None):
+        self.send_response(302)
+        self.send_header("Location", url)
+        if set_cookie:
+            self.send_header("Set-Cookie", set_cookie)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def send_json(self, data, status_code=200, set_cookie=None):
         response_bytes = json.dumps(data, ensure_ascii=False).encode("utf-8")
         self.send_response(status_code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(response_bytes)))
         self.send_header("Access-Control-Allow-Origin", "*")
+        if set_cookie:
+            self.send_header("Set-Cookie", set_cookie)
         self.end_headers()
         self.wfile.write(response_bytes)
 
@@ -1222,7 +1129,29 @@ class MailServerHandler(BaseHTTPRequestHandler):
         parsed = urlparse(self.path)
         path = parsed.path
 
+        if path == "/login":
+            user = self.get_current_user()
+            if user:
+                self.redirect_to("/")
+                return
+            login_path = os.path.join(os.path.dirname(__file__), "templates", "login.html")
+            if os.path.exists(login_path):
+                with open(login_path, "r", encoding="utf-8") as f:
+                    content = f.read().encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(content)))
+                self.end_headers()
+                self.wfile.write(content)
+            else:
+                self.send_error(404, "Template login.html introuvable")
+            return
+
         if path == "/" or path == "/index.html":
+            user = self.get_current_user()
+            if not user:
+                self.redirect_to("/login")
+                return
             template_path = os.path.join(os.path.dirname(__file__), "templates", "index.html")
             if os.path.exists(template_path):
                 with open(template_path, "r", encoding="utf-8") as f:
@@ -1235,6 +1164,21 @@ class MailServerHandler(BaseHTTPRequestHandler):
             else:
                 self.send_error(404, "Template index.html introuvable")
             return
+
+        if path == "/api/auth/me":
+            user = self.get_current_user()
+            if user:
+                self.send_json({"success": True, "authenticated": True, "user": user})
+            else:
+                self.send_json({"success": False, "authenticated": False, "user": None}, 401)
+            return
+
+        # Enforce authentication for all other API endpoints
+        if path.startswith("/api/"):
+            user = self.get_current_user()
+            if not user:
+                self.send_json({"success": False, "message": "Session expirée. Veuillez vous reconnecter.", "unauthorized": True}, 401)
+                return
 
         elif path == "/api/config":
             cfg = load_config()
@@ -1352,6 +1296,63 @@ class MailServerHandler(BaseHTTPRequestHandler):
                 data = json.loads(body.decode("utf-8"))
             except Exception:
                 pass
+
+        # 1. Public Auth Endpoints
+        if path == "/api/login":
+            username = data.get("username", "").strip()
+            password = data.get("password", "")
+            remember = bool(data.get("remember", True))
+            
+            user = database.authenticate_user(username, password)
+            if not user:
+                self.send_json({"success": False, "message": "Identifiant ou mot de passe incorrect."})
+                return
+            
+            days = 30 if remember else 1
+            token = database.create_user_session(user["id"], duration_days=days)
+            max_age = days * 86400
+            cookie = f"mailstorm_session={token}; Path=/; HttpOnly; SameSite=Lax; Max-Age={max_age}"
+            self.send_json({
+                "success": True, 
+                "message": "Connexion réussie !", 
+                "user": {
+                    "id": user["id"], 
+                    "username": user["username"], 
+                    "display_name": user.get("display_name") or user["username"],
+                    "email": user.get("email") or ""
+                }
+            }, set_cookie=cookie)
+            return
+
+        elif path == "/api/logout":
+            token = self.get_cookie("mailstorm_session")
+            if token:
+                database.delete_user_session(token)
+            cookie = "mailstorm_session=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0"
+            self.send_json({"success": True, "message": "Déconnexion réussie !"}, set_cookie=cookie)
+            return
+
+        # 2. Enforce Authentication for all other POST actions
+        current_user = self.get_current_user()
+        if not current_user:
+            self.send_json({"success": False, "message": "Session expirée. Veuillez vous reconnecter.", "unauthorized": True}, 401)
+            return
+
+        if path == "/api/user/change-password":
+            current_pwd = data.get("current_password", "")
+            new_pwd = data.get("new_password", "")
+            if not new_pwd or len(new_pwd) < 4:
+                self.send_json({"success": False, "message": "Le mot de passe doit comporter au moins 4 caractères."})
+                return
+            verified = database.authenticate_user(current_user["username"], current_pwd)
+            if not verified:
+                self.send_json({"success": False, "message": "Mot de passe actuel incorrect."})
+                return
+            database.change_user_password(current_user["id"], new_pwd)
+            new_token = database.create_user_session(current_user["id"], duration_days=30)
+            cookie = f"mailstorm_session={new_token}; Path=/; HttpOnly; SameSite=Lax; Max-Age={30 * 86400}"
+            self.send_json({"success": True, "message": "Mot de passe modifié avec succès !"}, set_cookie=cookie)
+            return
 
         if path == "/api/config":
             save_config(data)

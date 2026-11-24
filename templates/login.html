@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fr" class="h-full bg-slate-900">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion • MailStorm Pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; }
+    .bg-grid-pattern {
+      background-image: radial-gradient(rgba(99, 102, 241, 0.15) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+  </style>
+</head>
+<body class="h-full flex items-center justify-center p-4 bg-slate-950 bg-grid-pattern relative overflow-hidden">
+
+  <!-- Ambient background glow -->
+  <div class="absolute -top-40 -left-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="absolute -bottom-40 -right-40 w-96 h-96 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
+
+  <div class="w-full max-w-md relative z-10">
+
+    <!-- Card Container -->
+    <div class="bg-slate-900/90 border border-slate-800 shadow-2xl rounded-3xl p-8 backdrop-blur-xl space-y-6">
+
+      <!-- Header Brand -->
+      <div class="text-center space-y-2">
+        <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 to-indigo-400 text-white shadow-lg shadow-indigo-500/30 text-2xl font-black mb-2">
+          ⚡
+        </div>
+        <h1 class="text-2xl font-black text-white tracking-tight">MailStorm Pro</h1>
+        <p class="text-xs text-slate-400 font-medium">Plateforme d'envoi d'emails & de certificats en masse</p>
+      </div>
+
+      <!-- Feedback Alert -->
+      <div id="login-error" class="hidden p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center space-x-2">
+        <span class="text-base">⚠️</span>
+        <span id="login-error-text">Identifiants incorrects</span>
+      </div>
+
+      <!-- Login Form -->
+      <form id="form-login" onsubmit="handleLogin(event)" class="space-y-4">
+        
+        <div>
+          <label for="input-username" class="block text-xs font-semibold text-slate-300 mb-1.5">Identifiant ou Email</label>
+          <div class="relative">
+            <input 
+              type="text" 
+              id="input-username" 
+              required 
+              placeholder="admin ou votre email" 
+              autocomplete="username"
+              class="w-full text-sm font-medium bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+          </div>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label for="input-password" class="block text-xs font-semibold text-slate-300">Mot de passe</label>
+          </div>
+          <div class="relative">
+            <input 
+              type="password" 
+              id="input-password" 
+              required 
+              placeholder="••••••••" 
+              autocomplete="current-password"
+              class="w-full text-sm font-medium bg-slate-950/80 border border-slate-800 rounded-xl pl-4 pr-11 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+            <button 
+              type="button" 
+              onclick="togglePasswordVisibility()" 
+              class="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-sm p-1 transition"
+              title="Afficher/masquer le mot de passe">
+              👁️
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between pt-1">
+          <label class="flex items-center space-x-2 cursor-pointer select-none">
+            <input type="checkbox" id="chk-remember" checked class="w-4 h-4 rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-slate-900">
+            <span class="text-xs text-slate-400">Rester connecté</span>
+          </label>
+          <span class="text-[11px] text-indigo-400/80 font-medium">Session sécurisée</span>
+        </div>
+
+        <!-- Submit Button -->
+        <button 
+          type="submit" 
+          id="btn-submit" 
+          class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-bold text-sm shadow-lg shadow-indigo-600/25 transition flex items-center justify-center space-x-2 cursor-pointer mt-2">
+          <span>Se connecter</span>
+          <span id="btn-arrow">→</span>
+        </button>
+
+      </form>
+
+      <!-- Default Credentials Hint Card -->
+      <div class="p-3.5 rounded-2xl bg-slate-950/60 border border-slate-800/80 text-[11px] text-slate-400 space-y-1.5">
+        <div class="flex items-center space-x-1.5 text-indigo-400 font-semibold">
+          <span>🔑</span>
+          <span>Accès Initial Administrateur :</span>
+        </div>
+        <div class="flex items-center justify-between font-mono bg-slate-900/90 px-2.5 py-1.5 rounded-lg border border-slate-800 text-slate-300">
+          <span>Identifiant : <b class="text-white">admin</b></span>
+          <span>Mot de passe : <b class="text-white">admin123</b></span>
+        </div>
+        <p class="text-[10px] text-slate-500">
+          Vous pourrez personnaliser vos identifiants ou mot de passe à tout moment depuis les Paramètres.
+        </p>
+      </div>
+
+      <!-- Footer DB Status -->
+      <div class="pt-2 text-center text-[11px] text-slate-500 flex items-center justify-center space-x-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span>Base de données SQLite active & chiffrée</span>
+      </div>
+
+    </div>
+
+    <!-- Copyright -->
+    <p class="text-center text-xs text-slate-500 mt-4 font-medium">
+      MailStorm Pro • Club Scientifique EPIK Leaders
+    </p>
+
+  </div>
+
+  <script>
+    function togglePasswordVisibility() {
+      const input = document.getElementById("input-password");
+      if (input.type === "password") {
+        input.type = "text";
+      } else {
+        input.type = "password";
+      }
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const usernameInput = document.getElementById("input-username");
+      const passwordInput = document.getElementById("input-password");
+      const rememberChk = document.getElementById("chk-remember");
+      const btn = document.getElementById("btn-submit");
+      const errorBox = document.getElementById("login-error");
+      const errorText = document.getElementById("login-error-text");
+
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
+
+      if (!username || !password) return;
+
+      btn.disabled = true;
+      btn.innerHTML = `<svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg><span>Vérification...</span>`;
+      errorBox.classList.add("hidden");
+
+      try {
+        const res = await fetch("/api/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: username,
+            password: password,
+            remember: rememberChk.checked
+          })
+        });
+
+        const data = await res.json();
+        if (data.success) {
+          btn.innerHTML = `<span>✓ Connecté ! Redirection...</span>`;
+          window.location.href = "/";
+        } else {
+          errorBox.classList.remove("hidden");
+          errorText.textContent = data.message || "Identifiant ou mot de passe incorrect.";
+          btn.disabled = false;
+          btn.innerHTML = `<span>Se connecter</span><span>→</span>`;
+          passwordInput.value = "";
+          passwordInput.focus();
+        }
+      } catch (err) {
+        errorBox.classList.remove("hidden");
+        errorText.textContent = "Erreur de connexion au serveur.";
+        btn.disabled = false;
+        btn.innerHTML = `<span>Se connecter</span><span>→</span>`;
+      }
+    }
+  </script>
+
+</body>
+</html>
