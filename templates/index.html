@@ -1309,8 +1309,8 @@
   </div>
 
   <!-- MODAL: CHOIX DE MODÈLES D'EMAILS PRO ET PERSONNALISÉS -->
-  <div id="modal-templates" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-8 space-y-4">
+  <div id="modal-templates" onclick="if(event.target === this) closeTemplatesModal()" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-2xl w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-auto space-y-4">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <div>
           <h3 class="font-bold text-slate-900 text-base sm:text-lg flex items-center space-x-2">
@@ -1438,8 +1438,8 @@
   </div>
 
   <!-- MODAL: CRÉER / MODIFIER UN MODÈLE PERSONNALISÉ -->
-  <div id="modal-create-template" class="hidden fixed inset-0 z-55 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-8 space-y-4">
+  <div id="modal-create-template" onclick="if(event.target === this) closeCreateTemplateModal()" class="hidden fixed inset-0 z-55 bg-slate-900/60 backdrop-blur-sm flex items-start sm:items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-auto space-y-4">
       <div class="flex items-center justify-between pb-3 border-b border-slate-100">
         <div>
           <h3 class="font-bold text-slate-900 text-base sm:text-lg flex items-center space-x-2">
@@ -1702,21 +1702,21 @@
   </div>
 
   <!-- MODAL: STUDIO DE CERTIFICATS & ATTESTATIONS DYNAMIQUES -->
-  <div id="modal-certificate-studio" class="hidden fixed inset-0 z-55 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
-    <div class="bg-white rounded-2xl max-w-4xl w-full p-5 sm:p-6 shadow-2xl border border-slate-100 my-6 space-y-4">
-      <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+  <div id="modal-certificate-studio" onclick="if(event.target === this) closeCertificateStudioModal()" class="hidden fixed inset-0 z-55 bg-slate-900/60 backdrop-blur-sm flex items-start sm:items-center justify-center p-2 sm:p-4 overflow-y-auto">
+    <div class="bg-white rounded-2xl max-w-4xl w-full p-4 sm:p-6 shadow-2xl border border-slate-100 my-auto max-h-[92vh] flex flex-col space-y-3 sm:space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 flex-shrink-0">
         <div>
           <h3 class="font-bold text-slate-900 text-base sm:text-lg flex items-center space-x-2">
             <span>🎓 Studio de Certificats & Attestations Dynamiques</span>
           </h3>
           <p class="text-xs text-slate-500 mt-0.5">Générez automatiquement un certificat nominatif unique pour chaque destinataire.</p>
         </div>
-        <button onclick="closeCertificateStudioModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1 leading-none cursor-pointer">&times;</button>
+        <button type="button" onclick="closeCertificateStudioModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold p-1 leading-none cursor-pointer" title="Fermer">&times;</button>
       </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 flex-1 overflow-y-auto custom-scroll pr-1 py-1">
         <!-- Left: Configuration Form (7 cols) -->
-        <div class="lg:col-span-7 space-y-3.5 max-h-[70vh] overflow-y-auto custom-scroll pr-1">
+        <div class="lg:col-span-7 space-y-3.5 pr-1">
           <!-- 1. Enable Toggle -->
           <div class="flex items-center justify-between p-3 rounded-xl bg-indigo-50/70 border border-indigo-100">
             <div>
@@ -1809,8 +1809,19 @@
             </p>
           </div>
 
-          <!-- 4. Certificate Text Info -->
-          <div class="space-y-2 pt-2 border-t border-slate-100">
+          <!-- Official EPIK Leaders Info Note (Shown when EPIK is selected) -->
+          <div id="cert-epik-official-note" class="p-3 rounded-xl bg-blue-50/70 border border-blue-200 text-blue-950 text-xs space-y-1">
+            <div class="font-bold flex items-center space-x-1.5 text-blue-900">
+              <span class="text-sm">📌</span>
+              <span>Détails officiels de la formation</span>
+            </div>
+            <p class="text-[11px] text-blue-800 leading-relaxed">
+              Le titre de formation (<b>Création de Contenu</b>), la date (<b>23 Novembre 2026</b>) et les signatures officielles de <b>Iheb Jammel</b> & <b>Mohamed Ali Mseddi</b> sont déjà inscrits en haute résolution sur le diplôme officiel. MailStorm personnalise le nom de chaque participant au centre.
+            </p>
+          </div>
+
+          <!-- 4. Certificate Text Info (for templates like prestige, modern_tech, classic) -->
+          <div id="cert-event-info-section" class="hidden space-y-2 pt-2 border-t border-slate-100">
             <label class="block text-xs font-bold text-slate-700">3. Informations de l'Événement :</label>
             <div class="space-y-2">
               <div>
@@ -1953,7 +1964,7 @@
         </div>
       </div>
 
-      <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2">
+      <div class="pt-3 border-t border-slate-100 flex items-center justify-end space-x-2 flex-shrink-0">
         <button 
           type="button" 
           onclick="closeCertificateStudioModal()" 
@@ -4230,6 +4241,16 @@
       if (chk) chk.checked = isEnabled;
       if (modalChk) modalChk.checked = isEnabled;
 
+      if (modalChk && !modalChk._hasListener) {
+        modalChk._hasListener = true;
+        modalChk.addEventListener("change", function() {
+          const btn = document.getElementById("btn-save-certificate");
+          if (btn) {
+            btn.textContent = this.checked ? "Enregistrer & Activer" : "Enregistrer (Désactivé)";
+          }
+        });
+      }
+
       const tpl = certificateConfig.template_type || "epik_leaders";
       onCertTemplateSelected(tpl, false);
 
@@ -4359,6 +4380,21 @@
       if (epikBadge) {
         if (tpl === "epik_leaders") epikBadge.classList.remove("hidden");
         else epikBadge.classList.add("hidden");
+      }
+
+      const epikNote = document.getElementById("cert-epik-official-note");
+      if (epikNote) {
+        if (tpl === "epik_leaders") epikNote.classList.remove("hidden");
+        else epikNote.classList.add("hidden");
+      }
+
+      const eventInfoSec = document.getElementById("cert-event-info-section");
+      if (eventInfoSec) {
+        if (tpl === "prestige" || tpl === "modern_tech" || tpl === "classic") {
+          eventInfoSec.classList.remove("hidden");
+        } else {
+          eventInfoSec.classList.add("hidden");
+        }
       }
 
       const customSection = document.getElementById("cert-custom-bg-section");
@@ -4566,6 +4602,11 @@
       }
 
       const cfg = getCertFormConfig();
+      const modalChk = document.getElementById("cert-modal-enabled");
+      // If modal checkbox is checked or if user is clicking save, ensure state matches
+      if (modalChk) {
+        cfg.enabled = modalChk.checked;
+      }
       certificateConfig = cfg;
 
       try {
@@ -4577,10 +4618,10 @@
         const data = await res.json();
         if (data.success) {
           const chk = document.getElementById("chk-enable-certificate");
-          if (chk) chk.checked = cfg.enabled;
+          if (chk) chk.checked = !!cfg.enabled;
           updateCertSummaryBox();
           closeCertificateStudioModal();
-          alert("✅ Paramètres du certificat enregistrés avec succès !");
+          alert(cfg.enabled ? "✅ Paramètres du certificat enregistrés et activés avec succès !" : "✅ Paramètres du certificat enregistrés.");
         } else {
           alert("Erreur: " + data.message);
         }
@@ -5478,6 +5519,47 @@
         alert("Erreur de connexion avec le serveur.");
       }
     }
+
+    // Fermer les modals avec la touche Echap (Escape)
+    document.addEventListener("keydown", function(e) {
+      if (e.key === "Escape" || e.keyCode === 27) {
+        const certModal = document.getElementById("modal-certificate-studio");
+        if (certModal && !certModal.classList.contains("hidden")) {
+          closeCertificateStudioModal();
+          return;
+        }
+        const tplModal = document.getElementById("modal-templates");
+        if (tplModal && !tplModal.classList.contains("hidden")) {
+          closeTemplatesModal();
+          return;
+        }
+        const createTplModal = document.getElementById("modal-create-template");
+        if (createTplModal && !createTplModal.classList.contains("hidden")) {
+          closeCreateTemplateModal();
+          return;
+        }
+        const manageSig = document.getElementById("modal-manage-signatures");
+        if (manageSig && !manageSig.classList.contains("hidden")) {
+          closeManageSignaturesModal();
+          return;
+        }
+        const editSig = document.getElementById("modal-edit-signature");
+        if (editSig && !editSig.classList.contains("hidden")) {
+          closeEditSignatureModal();
+          return;
+        }
+        const testModal = document.getElementById("modal-test");
+        if (testModal && !testModal.classList.contains("hidden")) {
+          closeTestModal();
+          return;
+        }
+        const spamModal = document.getElementById("modal-spam-score");
+        if (spamModal && !spamModal.classList.contains("hidden")) {
+          closeSpamScoreModal();
+          return;
+        }
+      }
+    });
   </script>
 </body>
 </html>
